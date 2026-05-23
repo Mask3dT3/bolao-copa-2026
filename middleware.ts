@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+type CookieToSet = { name: string; value: string; options?: any };
+
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -12,7 +14,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
@@ -33,12 +35,10 @@ export async function middleware(request: NextRequest) {
   const isAuthPage = path === "/login" || path === "/cadastro";
   const isApi = path.startsWith("/api");
 
-  // Não logado tentando acessar página privada → manda pro login
   if (!user && !isAuthPage && !isApi && path !== "/") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Logado em página de login/cadastro → manda pros jogos
   if (user && isAuthPage) {
     return NextResponse.redirect(new URL("/jogos", request.url));
   }
