@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-browser";
-import { Trophy, Mail, Lock, User, Loader2, Check, X } from "lucide-react";
+import { Mail, Lock, User, Loader2, Check, X } from "lucide-react";
+import LogoBolao from "@/components/LogoBolao";
 
 function avaliarSenha(senha: string) {
   const tamanho = senha.length >= 8;
@@ -56,7 +57,6 @@ export default function Cadastro() {
       }
       setCarregando(false);
     } else {
-      // Tenta logar direto
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email, password: senha,
       });
@@ -73,20 +73,20 @@ export default function Cadastro() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-5 relative">
-      <div className="absolute top-10 left-10 w-40 h-40 bg-yellow-400/10 rounded-full blur-3xl" />
+      <div className="absolute top-10 left-10 w-40 h-40 bg-[var(--gold)]/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-60 h-60 bg-green-400/10 rounded-full blur-3xl" />
 
       <div className="w-full max-w-md scorecard rounded-2xl p-8 relative">
-        <div className="text-center mb-7">
-          <Trophy size={48} className="text-yellow-400 mx-auto drop-shadow-[0_0_20px_rgba(255,215,0,0.3)]" />
-          <div className="font-display text-3xl tracking-[4px] text-yellow-400 mt-3 leading-none">
+        <div className="mb-7">
+          <LogoBolao tamanho="xl" />
+          <div className="mt-6 text-center font-display text-2xl tracking-[4px] text-[var(--gold)]">
             CRIAR CONTA
           </div>
         </div>
 
         <form onSubmit={cadastrar} className="space-y-4">
           <div>
-            <label className="font-display text-xs tracking-[3px] text-yellow-400 block mb-2 flex items-center gap-1.5">
+            <label className="font-display text-xs tracking-[3px] text-[var(--gold)] mb-2 flex items-center gap-1.5">
               <User size={12} /> NOME
             </label>
             <input
@@ -96,13 +96,14 @@ export default function Cadastro() {
               maxLength={40}
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              className="w-full px-4 py-3 bg-black/30 border border-yellow-400/20 rounded-lg text-white outline-none focus:border-yellow-400/60 transition"
+              className="w-full px-4 py-3 bg-black/30 border border-[var(--gold)]/20 rounded-lg outline-none focus:border-[var(--gold)]/60 transition"
+              style={{ color: "var(--text-primary)" }}
               placeholder="Como aparece no ranking"
             />
           </div>
 
           <div>
-            <label className="font-display text-xs tracking-[3px] text-yellow-400 block mb-2 flex items-center gap-1.5">
+            <label className="font-display text-xs tracking-[3px] text-[var(--gold)] mb-2 flex items-center gap-1.5">
               <Mail size={12} /> EMAIL
             </label>
             <input
@@ -111,13 +112,14 @@ export default function Cadastro() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 bg-black/30 border border-yellow-400/20 rounded-lg text-white outline-none focus:border-yellow-400/60 transition"
+              className="w-full px-4 py-3 bg-black/30 border border-[var(--gold)]/20 rounded-lg outline-none focus:border-[var(--gold)]/60 transition"
+              style={{ color: "var(--text-primary)" }}
               placeholder="seu@email.com"
             />
           </div>
 
           <div>
-            <label className="font-display text-xs tracking-[3px] text-yellow-400 block mb-2 flex items-center gap-1.5">
+            <label className="font-display text-xs tracking-[3px] text-[var(--gold)] mb-2 flex items-center gap-1.5">
               <Lock size={12} /> SENHA
             </label>
             <input
@@ -126,7 +128,8 @@ export default function Cadastro() {
               autoComplete="new-password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="w-full px-4 py-3 bg-black/30 border border-yellow-400/20 rounded-lg text-white outline-none focus:border-yellow-400/60 transition"
+              className="w-full px-4 py-3 bg-black/30 border border-[var(--gold)]/20 rounded-lg outline-none focus:border-[var(--gold)]/60 transition"
+              style={{ color: "var(--text-primary)" }}
               placeholder="Mínimo 8 caracteres"
             />
             {senha && (
@@ -153,7 +156,7 @@ export default function Cadastro() {
           <button
             type="submit"
             disabled={carregando || !validacao.valido}
-            className="w-full py-3.5 bg-yellow-400 hover:bg-yellow-300 text-black font-display tracking-[3px] text-base font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 glow-gold"
+            className="w-full py-3.5 bg-[var(--gold)] hover:opacity-90 text-black font-display tracking-[3px] text-base font-bold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 glow-gold"
           >
             {carregando ? (
               <>
@@ -167,7 +170,7 @@ export default function Cadastro() {
 
         <div className="text-center mt-6 text-sm text-secondary">
           Já tem conta?{" "}
-          <Link href="/login" className="text-yellow-400 hover:underline font-medium">
+          <Link href="/login" className="text-[var(--gold)] hover:underline font-medium">
             Fazer login
           </Link>
         </div>
