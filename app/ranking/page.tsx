@@ -32,7 +32,7 @@ export default async function PaginaRanking() {
             </div>
           </div>
           <div className="text-right">
-            <div className="font-mono text-2xl text-white/80">{jogosFinalizados || 0}</div>
+            <div className="font-mono text-2xl text-secondary">{jogosFinalizados || 0}</div>
             <div className="text-[10px] font-display tracking-[2px] opacity-60">
               {jogosFinalizados === 1 ? "JOGO" : "JOGOS"} ENCERRADOS
             </div>
@@ -49,7 +49,7 @@ export default async function PaginaRanking() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-400 text-black text-xs font-bold rounded-full px-2 py-0.5">2º</div>
                 <div className="font-semibold text-sm truncate">{ranking[1].nome}</div>
                 <div className="font-score text-2xl text-gray-300 mt-1">{ranking[1].total_pontos}</div>
-                <div className="text-[10px] opacity-50">pts</div>
+                <div className="text-[10px] text-muted">pts</div>
               </div>
             </div>
             {/* 1º */}
@@ -59,7 +59,7 @@ export default async function PaginaRanking() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-yellow-400 text-black text-xs font-bold rounded-full px-3 py-0.5">1º</div>
                 <div className="font-semibold text-sm truncate">{ranking[0].nome}</div>
                 <div className="font-score text-3xl text-yellow-400 mt-1">{ranking[0].total_pontos}</div>
-                <div className="text-[10px] opacity-50">pts</div>
+                <div className="text-[10px] text-muted">pts</div>
               </div>
             </div>
             {/* 3º */}
@@ -69,7 +69,7 @@ export default async function PaginaRanking() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-700 text-white text-xs font-bold rounded-full px-2 py-0.5">3º</div>
                 <div className="font-semibold text-sm truncate">{ranking[2].nome}</div>
                 <div className="font-score text-2xl text-orange-400 mt-1">{ranking[2].total_pontos}</div>
-                <div className="text-[10px] opacity-50">pts</div>
+                <div className="text-[10px] text-muted">pts</div>
               </div>
             </div>
           </div>
@@ -77,7 +77,7 @@ export default async function PaginaRanking() {
 
         {/* Tabela completa */}
         {!ranking || ranking.length === 0 ? (
-          <div className="text-center py-12 opacity-50">Sem participantes ainda.</div>
+          <div className="text-center py-12 text-muted">Sem participantes ainda.</div>
         ) : (
           ranking.map((u: any, i: number) => {
             const isMe = u.id === user.id;
@@ -94,7 +94,7 @@ export default async function PaginaRanking() {
                 }`}
               >
                 <div className="font-display text-xl text-yellow-400/90 font-bold">
-                  {i + 1}<span className="text-[10px] opacity-50">º</span>
+                  {i + 1}<span className="text-[10px] text-muted">º</span>
                 </div>
                 <div className="font-semibold text-[15px] truncate">
                   {u.nome}
