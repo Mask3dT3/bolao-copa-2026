@@ -5,11 +5,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Cores via CSS variables (mudam com o tema)
+        // Backgrounds
         base: "var(--bg-base)",
         elevated: "var(--bg-elevated)",
         card: "var(--bg-card)",
-        // Cores semânticas (fixas)
+        // Texts (também disponíveis como cores genéricas)
+        primary: "var(--text-primary)",
+        secondary: "var(--text-secondary)",
+        muted: "var(--text-muted)",
+        faint: "var(--text-faint)",
+        // Semânticas
         gold: {
           DEFAULT: "var(--gold)",
           soft: "var(--gold-soft)",
@@ -18,12 +23,6 @@ module.exports = {
         accent: "var(--accent)",
         danger: "var(--danger)",
         warning: "var(--warning)",
-      },
-      textColor: {
-        primary: "var(--text-primary)",
-        secondary: "var(--text-secondary)",
-        muted: "var(--text-muted)",
-        faint: "var(--text-faint)",
       },
       borderColor: {
         default: "var(--border-default)",
