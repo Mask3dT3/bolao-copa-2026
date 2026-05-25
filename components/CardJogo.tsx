@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { Lock, Check, Edit2, Share2, Clock, EyeOff } from "lucide-react";
-import { getBandeiraUrl } from "@/lib/bandeiras";
+import { getBandeiraCircularUrl } from "@/lib/bandeiras";
 import { useToast } from "./ToastProvider";
 
 type Aposta = {
@@ -35,7 +35,7 @@ type Props = {
 };
 
 function Bandeira({ time, size = 48 }: { time: string; size?: number }) {
-  const url = getBandeiraUrl(time, "medium");
+  const url = getBandeiraCircularUrl(time);
   if (!url) {
     return (
       <div
