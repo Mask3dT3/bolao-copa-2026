@@ -14,7 +14,7 @@ export default async function PaginaJogos() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("nome, is_admin")
+    .select("nome, foto_url, is_admin")
     .eq("id", user.id)
     .single();
 
@@ -23,11 +23,9 @@ export default async function PaginaJogos() {
     .select("*")
     .order("data_jogo", { ascending: true });
 
-  // IMPORTANTE: usa a view apostas_publicas (que esconde placares antes do kickoff)
-  // em vez da tabela apostas diretamente. Aqui também precisamos do nome de quem apostou.
   const { data: apostas } = await supabase
     .from("apostas_publicas")
-    .select("*, profiles(nome)");
+    .select("*, profiles(nome, foto_url)");
 
   const apostasPorJogo: Record<number, any[]> = {};
   const minhasApostas: Record<number, any> = {};
@@ -40,7 +38,12 @@ export default async function PaginaJogos() {
 
   return (
     <>
-      <Header nome={profile?.nome || "Você"} isAdmin={!!profile?.is_admin} userId={user.id} />
+      <Header
+        nome={profile?.nome || "Você"}
+        isAdmin={!!profile?.is_admin}
+        userId={user.id}
+        fotoUrl={profile?.foto_url}
+      />
       <main className="max-w-4xl mx-auto px-4 py-5 pb-24">
         {!jogos || jogos.length === 0 ? (
           <div className="text-center py-16 text-muted">
