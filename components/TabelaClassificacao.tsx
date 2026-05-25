@@ -1,7 +1,7 @@
 "use client";
 
 import { LinhaClassificacao } from "@/lib/classificacao";
-import { getBandeiraUrl } from "@/lib/bandeiras";
+import { getBandeiraCircularUrl } from "@/lib/bandeiras";
 import { Sparkles } from "lucide-react";
 
 type Props = {
@@ -53,7 +53,7 @@ export default function TabelaClassificacao({
           </thead>
           <tbody>
             {classificacao.map((linha, i) => {
-              const url = getBandeiraUrl(linha.time, "small");
+              const url = getBandeiraCircularUrl(linha.time);
               const classifica = i < 2; // Top 2 classifica
               return (
                 <tr
