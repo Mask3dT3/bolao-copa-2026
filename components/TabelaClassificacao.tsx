@@ -85,7 +85,12 @@ export default function TabelaClassificacao({
                           {linha.time.substring(0, 2).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-medium truncate">{linha.time}</span>
+                      <span
+                        className="font-medium truncate"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {linha.time}
+                      </span>
                       {linha.jogosSimulados > 0 && (
                         <Sparkles size={11} className="text-purple-300 flex-shrink-0" />
                       )}
