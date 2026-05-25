@@ -53,7 +53,12 @@ export default function Header({ nome, isAdmin, userId }: Props) {
               title="Editar perfil"
             >
               <User size={14} className="text-[var(--gold)]" />
-              <span className="max-w-[120px] truncate">{nome}</span>
+              <span
+                className="max-w-[120px] truncate"
+                style={{ color: "var(--text-primary)" }}
+              >
+                {nome}
+              </span>
             </Link>
             <button
               onClick={sair}
