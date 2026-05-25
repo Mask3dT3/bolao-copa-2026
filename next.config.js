@@ -4,6 +4,7 @@ const nextConfig = {
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "flagcdn.com" },
+      { protocol: "https", hostname: "cdn.jsdelivr.net" },
       { protocol: "https", hostname: "crests.football-data.org" },
     ],
   },
