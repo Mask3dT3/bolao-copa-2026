@@ -19,7 +19,7 @@ export default async function PaginaRegras() {
       desc: "Acertou o número exato de gols dos dois times." },
     { icon: Check, color: "text-green-400", titulo: "ACERTOU O RESULTADO", valor: "3 PTS",
       desc: "Acertou quem ganhou (ou empate), mas não o placar exato." },
-    { icon: Lock, color: "text-white/50", titulo: "FECHAMENTO",
+    { icon: Lock, color: "text-muted", titulo: "FECHAMENTO",
       desc: "Apostas ficam bloqueadas no momento do início de cada jogo. Você pode editar quantas vezes quiser antes disso." },
     { icon: Trophy, color: "text-yellow-400", titulo: "PRÊMIO",
       desc: "Valor fixo combinado entre os amigos antes do início da Copa. Quem fizer mais pontos no fim leva (ou divide entre os top 3, vocês decidem)." },
