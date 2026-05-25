@@ -165,7 +165,7 @@ export default function Cadastro() {
           </button>
         </form>
 
-        <div className="text-center mt-6 text-sm text-white/60">
+        <div className="text-center mt-6 text-sm text-secondary">
           Já tem conta?{" "}
           <Link href="/login" className="text-yellow-400 hover:underline font-medium">
             Fazer login
@@ -178,7 +178,7 @@ export default function Cadastro() {
 
 function Requisito({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <div className={`flex items-center gap-1.5 ${ok ? "text-green-400" : "text-white/40"}`}>
+    <div className={`flex items-center gap-1.5 ${ok ? "text-green-400" : "text-faint"}`}>
       {ok ? <Check size={11} /> : <X size={11} />} {label}
     </div>
   );
