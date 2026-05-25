@@ -145,15 +145,19 @@ export default function CentralNotificacoes({ userId }: { userId: string }) {
 
       {aberta && (
         <div
-          className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm"
+          className="fixed inset-0 z-[90] bg-black/40 backdrop-blur-sm"
           onClick={() => setAberta(false)}
         >
           <div
-            className="absolute top-16 right-2 sm:right-6 w-[calc(100vw-1rem)] sm:w-96 max-h-[80vh] scorecard rounded-2xl overflow-hidden flex flex-col"
+            className="
+              absolute scorecard rounded-2xl overflow-hidden flex flex-col shadow-2xl
+              max-sm:bottom-4 max-sm:left-4 max-sm:right-4 max-sm:top-20
+              sm:top-20 sm:right-4 sm:w-96 sm:max-h-[70vh]
+            "
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-default">
-              <div className="font-display text-lg tracking-wider">NOTIFICAÇÕES</div>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-default flex-shrink-0">
+              <div className="font-display text-lg tracking-wider text-primary">NOTIFICAÇÕES</div>
               <div className="flex items-center gap-2">
                 {naoLidas > 0 && (
                   <button
@@ -177,7 +181,7 @@ export default function CentralNotificacoes({ userId }: { userId: string }) {
                 <div className="p-8 text-center text-muted text-sm">Carregando...</div>
               ) : notificacoes.length === 0 ? (
                 <div className="p-8 text-center text-muted text-sm">
-                  <Bell size={32} className="mx-auto opacity-30 mb-2" />
+                  <Bell size={32} className="mx-auto text-faint mb-2" />
                   Nenhuma notificação no momento.
                 </div>
               ) : (
@@ -186,7 +190,7 @@ export default function CentralNotificacoes({ userId }: { userId: string }) {
                     key={n.id}
                     href={n.jogo_id ? `/jogos` : "#"}
                     onClick={() => setAberta(false)}
-                    className={`block px-4 py-3 border-b border-default hover:bg-[var(--border-default)] transition ${
+                    className={`block px-4 py-3 border-b border-default last:border-b-0 hover:bg-[var(--border-default)] transition ${
                       !n.lida ? "bg-[var(--gold)]/[0.05]" : ""
                     }`}
                   >
@@ -194,7 +198,7 @@ export default function CentralNotificacoes({ userId }: { userId: string }) {
                       <div className="flex-shrink-0 mt-0.5">{icones[n.tipo]}</div>
                       <div className="flex-1 min-w-0">
                         <div
-                          className={`text-sm leading-tight ${
+                          className={`text-sm leading-tight text-primary ${
                             !n.lida ? "font-semibold" : ""
                           }`}
                         >
