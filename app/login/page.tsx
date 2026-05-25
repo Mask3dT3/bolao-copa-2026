@@ -50,7 +50,7 @@ export default function Login() {
           <div className="font-display text-5xl tracking-[6px] text-yellow-400 mt-4 leading-none">
             COPA 2026
           </div>
-          <div className="font-display text-sm tracking-[6px] text-white/60 mt-1">
+          <div className="font-display text-sm tracking-[6px] text-secondary mt-1">
             BOLÃO DOS AMIGOS
           </div>
         </div>
@@ -109,7 +109,7 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="text-center mt-6 text-sm text-white/60">
+        <div className="text-center mt-6 text-sm text-secondary">
           Não tem conta?{" "}
           <Link href="/cadastro" className="text-yellow-400 hover:underline font-medium">
             Criar conta
