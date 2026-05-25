@@ -173,7 +173,10 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 py-2">
         <div className="flex flex-col items-center gap-2">
           <Bandeira time={jogo.time_a} size={52} />
-          <div className="font-display text-base sm:text-lg tracking-wide text-center leading-tight">
+          <div
+            className="font-semibold text-sm sm:text-base text-center leading-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
             {jogo.time_a}
           </div>
         </div>
@@ -196,7 +199,10 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
 
         <div className="flex flex-col items-center gap-2">
           <Bandeira time={jogo.time_b} size={52} />
-          <div className="font-display text-base sm:text-lg tracking-wide text-center leading-tight">
+          <div
+            className="font-semibold text-sm sm:text-base text-center leading-tight"
+            style={{ color: "var(--text-primary)" }}
+          >
             {jogo.time_b}
           </div>
         </div>
