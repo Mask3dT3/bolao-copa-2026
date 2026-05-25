@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import { Target, Check, X, TrendingUp, Award, Flame, AlertCircle } from "lucide-react";
-import { getBandeiraUrl } from "@/lib/bandeiras";
+import { getBandeiraCircularUrl } from "@/lib/bandeiras";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +60,7 @@ export default async function PaginaEstatisticas() {
           <div className="scorecard rounded-xl p-8 text-center stagger-item">
             <AlertCircle size={32} className="mx-auto text-yellow-400/60 mb-3" />
             <p className="opacity-70">Sem estatísticas ainda.</p>
-            <p className="text-sm opacity-50 mt-1">
+            <p className="text-sm text-muted mt-1">
               {apostasPendentes.length > 0
                 ? `Você tem ${apostasPendentes.length} ${apostasPendentes.length === 1 ? "palpite pendente" : "palpites pendentes"}.`
                 : "Faça seus palpites na aba Jogos!"}
@@ -95,7 +95,7 @@ export default async function PaginaEstatisticas() {
               </div>
 
               <div className="stagger-item scorecard rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1 text-white/80">
+                <div className="flex items-center gap-2 mb-1 text-secondary">
                   <Target size={16} />
                   <span className="text-[10px] font-display tracking-[2px] opacity-70">MÉDIA/JOGO</span>
                 </div>
@@ -154,7 +154,7 @@ export default async function PaginaEstatisticas() {
                       <div className="font-medium text-sm truncate">
                         {j.time_a} <span className="opacity-60">×</span> {j.time_b}
                       </div>
-                      <div className="text-[10px] opacity-50 font-mono">
+                      <div className="text-[10px] text-muted font-mono">
                         {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · {j.fase}
                       </div>
                     </div>
@@ -163,7 +163,7 @@ export default async function PaginaEstatisticas() {
                       <div className="font-mono text-sm text-yellow-400/80">
                         {a.gols_a}-{a.gols_b}
                       </div>
-                      <div className="font-mono text-[10px] opacity-50">
+                      <div className="font-mono text-[10px] text-muted">
                         real: {j.gols_a}-{j.gols_b}
                       </div>
                     </div>
@@ -173,7 +173,7 @@ export default async function PaginaEstatisticas() {
                           ? "text-yellow-400"
                           : a.pontos === 3
                           ? "text-green-400"
-                          : "text-white/30"
+                          : "text-faint"
                       }`}
                     >
                       +{a.pontos}
@@ -219,7 +219,7 @@ function BarStat({
 }
 
 function Mini({ time }: { time: string }) {
-  const url = getBandeiraUrl(time, "small");
+  const url = getBandeiraCircularUrl(time);
   if (!url) {
     return (
       <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold opacity-60 flex-shrink-0">
