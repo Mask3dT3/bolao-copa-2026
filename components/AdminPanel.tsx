@@ -207,7 +207,7 @@ export default function AdminPanel({
                     {j.gols_a} × {j.gols_b}
                   </div>
                 ) : (
-                  <div className="opacity-40 text-sm">sem resultado</div>
+                  <div className="text-muted text-sm">sem resultado</div>
                 )}
                 <button
                   onClick={() => {
