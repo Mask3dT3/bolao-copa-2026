@@ -2,33 +2,293 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Oswald:wght@500;600;700&display=swap");
+
+/* ============================================
+   SISTEMA DE TEMAS — Dark (default) + Light
+   ============================================ */
+
+:root {
+  /* Cores estruturais */
+  --bg-base: #0a0e1a;
+  --bg-elevated: #131826;
+  --bg-card: rgba(20, 25, 40, 0.7);
+  --bg-input: rgba(0, 0, 0, 0.3);
+
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.65);
+  --text-muted: rgba(255, 255, 255, 0.4);
+  --text-faint: rgba(255, 255, 255, 0.25);
+
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  /* Cores semânticas (mantém em ambos os temas) */
+  --gold: #FFD700;
+  --gold-soft: #FFE96B;
+  --gold-deep: #D4A800;
+  --accent: #00FF88;
+  --danger: #FF4757;
+  --warning: #FF9F1C;
+
+  /* Gradientes */
+  --gradient-stadium:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255, 215, 0, 0.12), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 10% 100%, rgba(0, 255, 136, 0.06), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(255, 71, 87, 0.04), transparent 60%),
+    linear-gradient(180deg, #0a0e1a 0%, #131826 100%);
+
+  --grain-opacity: 0.4;
+}
+
+[data-theme="light"] {
+  --bg-base: #f5f5f0;
+  --bg-elevated: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --bg-input: rgba(255, 255, 255, 0.6);
+
+  --text-primary: #0a0e1a;
+  --text-secondary: rgba(10, 14, 26, 0.7);
+  --text-muted: rgba(10, 14, 26, 0.5);
+  --text-faint: rgba(10, 14, 26, 0.3);
+
+  --border-default: rgba(10, 14, 26, 0.08);
+  --border-strong: rgba(10, 14, 26, 0.15);
+
+  --gold: #D4A800;
+  --gold-soft: #FFD700;
+  --gold-deep: #8B7000;
+
+  --gradient-stadium:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212, 168, 0, 0.15), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 10% 100%, rgba(0, 180, 100, 0.08), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(255, 71, 87, 0.03), transparent 60%),
+    linear-gradient(180deg, #f5f5f0 0%, #e8e8e0 100%);
+
+  --grain-opacity: 0.15;
+}
+
+/* ============================================
+   BASE
+   ============================================ */
+
+* {
+  border-color: var(--border-default);
+}
 
 html, body {
-  background: #0a0e1a;
-  color: #fff;
-  font-family: "Inter", sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Space Grotesk", sans-serif;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  overflow-x: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 body {
-  background: linear-gradient(180deg, #0a0e1a 0%, #131826 100%);
+  background: var(--gradient-stadium);
   background-attachment: fixed;
+  position: relative;
 }
 
-/* Esconder número arrow no input */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.84 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity);
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Pattern de "grama" no light mode no rodapé */
+[data-theme="light"] body::after {
+  content: "";
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, rgba(34, 139, 34, 0.06));
+  pointer-events: none;
+  z-index: 0;
+}
+
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type="number"] {
-  -moz-appearance: textfield;
+input[type="number"] { -moz-appearance: textfield; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+/* ============================================
+   COMPONENTES
+   ============================================ */
+
+.scorecard {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-default);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: #0a0e1a; }
-::-webkit-scrollbar-thumb { background: rgba(255, 215, 0, 0.2); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 215, 0, 0.4); }
+.scorecard::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0.5;
+}
+
+.scorecard:hover {
+  border-color: var(--border-strong);
+}
+
+.scorecard-finalizado {
+  background:
+    linear-gradient(135deg, rgba(255, 215, 0, 0.08), transparent),
+    var(--bg-card);
+  border-color: rgba(255, 215, 0, 0.25);
+}
+
+.scorecard-finalizado::before {
+  opacity: 1;
+}
+
+.glow-gold {
+  box-shadow: 0 0 24px -8px rgba(255, 215, 0, 0.4);
+}
+
+[data-theme="light"] .glow-gold {
+  box-shadow: 0 8px 24px -8px rgba(212, 168, 0, 0.4);
+}
+
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-default);
+}
+
+/* Animações de entrada (stagger) */
+.stagger-item {
+  opacity: 0;
+  animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger-item:nth-child(1) { animation-delay: 0.04s; }
+.stagger-item:nth-child(2) { animation-delay: 0.08s; }
+.stagger-item:nth-child(3) { animation-delay: 0.12s; }
+.stagger-item:nth-child(4) { animation-delay: 0.16s; }
+.stagger-item:nth-child(5) { animation-delay: 0.20s; }
+.stagger-item:nth-child(6) { animation-delay: 0.24s; }
+.stagger-item:nth-child(7) { animation-delay: 0.28s; }
+.stagger-item:nth-child(8) { animation-delay: 0.32s; }
+.stagger-item:nth-child(n+9) { animation-delay: 0.36s; }
+
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 159, 28, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(255, 159, 28, 0); }
+}
+
+.pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Botões e clicks */
+button, a { transition: all 0.15s ease; }
+button:active:not(:disabled) { transform: scale(0.97); }
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--border-default), var(--border-strong), var(--border-default));
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Inputs */
+input, textarea, select {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-faint);
+}
+
+/* Bottom nav padding pra mobile */
+@media (max-width: 768px) {
+  main { padding-bottom: 96px !important; }
+}
+
+/* Iluminação dramática nos títulos */
+.title-stadium {
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.15em;
+  background: linear-gradient(180deg, var(--gold-soft), var(--gold) 50%, var(--gold-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 40px rgba(255, 215, 0, 0.2);
+}
+
+[data-theme="light"] .title-stadium {
+  text-shadow: 0 2px 0 rgba(212, 168, 0, 0.1);
+}
+
+/* Linhas decorativas (estilo "campo de futebol") */
+.field-lines {
+  background-image:
+    linear-gradient(90deg, var(--border-default) 1px, transparent 1px),
+    linear-gradient(0deg, var(--border-default) 1px, transparent 1px);
+  background-size: 60px 60px;
+  background-position: -1px -1px;
+}
+
+/* Bandeira hover effect */
+.flag-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.flag-hover:hover {
+  transform: scale(1.15) rotate(-3deg);
+}
+
+/* Toast/Notification */
+@keyframes slideInRight {
+  0% { opacity: 0; transform: translateX(100%); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideOutRight {
+  0% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+.toast-enter { animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.toast-exit { animation: slideOutRight 0.3s ease-in forwards; }
+
+/* Acessibilidade — reduce motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
