@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
-import { RefreshCw, Edit2, Check, X, Zap } from "lucide-react";
+import { useToast } from "./ToastProvider";
+import { RefreshCw, Edit2, Check, X, Zap, ShieldCheck } from "lucide-react";
 
 type Jogo = {
   id: number;
@@ -16,6 +17,7 @@ type Jogo = {
   gols_a: number | null;
   gols_b: number | null;
   finalizado: boolean;
+  resultado_manual?: boolean;
 };
 
 export default function AdminPanel({
@@ -26,6 +28,7 @@ export default function AdminPanel({
   edgeFunctionUrl: string;
 }) {
   const router = useRouter();
+  const { toast } = useToast();
   const [carregando, setCarregando] = useState(false);
   const [msg, setMsg] = useState("");
   const [editando, setEditando] = useState<number | null>(null);
@@ -54,8 +57,11 @@ export default function AdminPanel({
       const data = await res.json();
 
       if (data.ok) {
+        const preservados = data.preservados_manuais
+          ? ` · ${data.preservados_manuais} manuais preservados`
+          : "";
         setMsg(
-          `✅ ${data.inseridos || 0} novos · ${data.atualizados || 0} atualizados · ${data.total_api || 0} jogos na API`
+          `✅ ${data.inseridos || 0} novos · ${data.atualizados || 0} atualizados${preservados}`
         );
         router.refresh();
       } else {
@@ -77,6 +83,7 @@ export default function AdminPanel({
         gols_a: parseInt(golsA),
         gols_b: parseInt(golsB),
         finalizado: true,
+        resultado_manual: true,
       })
       .eq("id", jogoId);
 
@@ -84,9 +91,10 @@ export default function AdminPanel({
       setEditando(null);
       setGolsA("");
       setGolsB("");
+      toast("success", "Resultado salvo", "Pontos foram recalculados");
       router.refresh();
     } else {
-      setMsg(`❌ ${error.message}`);
+      toast("error", "Erro ao salvar", error.message);
     }
   }
 
@@ -94,8 +102,24 @@ export default function AdminPanel({
     const supabase = createClient();
     await supabase
       .from("jogos")
-      .update({ gols_a: null, gols_b: null, finalizado: false })
+      .update({
+        gols_a: null,
+        gols_b: null,
+        finalizado: false,
+        resultado_manual: false,
+      })
       .eq("id", jogoId);
+    toast("success", "Resultado limpo");
+    router.refresh();
+  }
+
+  async function liberarParaAutomatico(jogoId: number) {
+    const supabase = createClient();
+    await supabase
+      .from("jogos")
+      .update({ resultado_manual: false })
+      .eq("id", jogoId);
+    toast("success", "Liberado", "A próxima sincronização vai puxar da API");
     router.refresh();
   }
 
@@ -109,43 +133,42 @@ export default function AdminPanel({
         <div className="flex items-center gap-2 font-display text-sm tracking-[2px] text-green-400 mb-2">
           <Zap size={16} /> SINCRONIZAÇÃO AUTOMÁTICA ATIVA
         </div>
-        <p className="text-sm opacity-80 leading-relaxed">
-          Os jogos são puxados automaticamente da{" "}
-          <strong className="text-green-400">Football-Data.org</strong> a cada minuto via
-          Edge Function. Você não precisa fazer nada — quando um jogo terminar,
-          o resultado aparece e os pontos são calculados automaticamente.
+        <p className="text-sm text-secondary leading-relaxed">
+          Jogos puxados da Football-Data.org a cada minuto.
+          Quando você editar um resultado manualmente, ele fica <strong>protegido</strong> —
+          o cron não sobrescreve.
         </p>
       </div>
 
-      <div className="bg-white/[0.03] border border-white/10 rounded p-4 mb-5">
-        <div className="font-display text-sm tracking-[2px] opacity-70 mb-3">
+      <div className="bg-white/[0.03] border border-default rounded p-4 mb-5">
+        <div className="font-display text-sm tracking-[2px] text-muted mb-3">
           AÇÕES MANUAIS
         </div>
         <button
           onClick={forcarAtualizacao}
           disabled={carregando}
-          className="flex items-center gap-2 bg-yellow-400 text-black font-display tracking-[2px] text-sm px-4 py-3 rounded disabled:opacity-50"
+          className="flex items-center gap-2 bg-[var(--gold)] text-black font-display tracking-[2px] text-sm px-4 py-3 rounded disabled:opacity-50"
         >
           <RefreshCw size={14} className={carregando ? "animate-spin" : ""} />
           {carregando ? "ATUALIZANDO..." : "FORÇAR ATUALIZAÇÃO AGORA"}
         </button>
         {msg && (
-          <div className="mt-3 text-sm bg-black/30 px-3 py-2 rounded border border-white/10">
+          <div className="mt-3 text-sm bg-black/30 px-3 py-2 rounded border border-default" style={{ color: "var(--text-primary)" }}>
             {msg}
           </div>
         )}
       </div>
 
-      <div className="font-display text-sm tracking-[2px] opacity-70 mb-3">
+      <div className="font-display text-sm tracking-[2px] text-muted mb-3">
         AJUSTE MANUAL DE RESULTADOS ({jogos.length} JOGOS)
       </div>
-      <div className="text-xs opacity-60 mb-3">
-        Use apenas se a API estiver com problema. Normalmente não é necessário.
+      <div className="text-xs text-muted mb-3">
+        Quando você salvar manualmente, o ícone 🛡️ aparece — significa que o cron não vai sobrescrever.
       </div>
 
       {jogos.length === 0 && (
-        <div className="text-center py-12 opacity-60">
-          Nenhum jogo cadastrado ainda. Clique em "Forçar Atualização" pra trazer os jogos da Copa.
+        <div className="text-center py-12 text-muted">
+          Nenhum jogo cadastrado ainda.
         </div>
       )}
 
@@ -154,13 +177,18 @@ export default function AdminPanel({
         return (
           <div
             key={j.id}
-            className="bg-white/[0.03] border border-white/10 rounded p-3 mb-2 flex items-center gap-3 text-sm flex-wrap"
+            className="bg-white/[0.03] border border-default rounded p-3 mb-2 flex items-center gap-3 text-sm flex-wrap"
           >
             <div className="flex-1 min-w-[200px]">
-              <div className="font-semibold">
+              <div className="font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
                 {j.time_a} × {j.time_b}
+                {j.resultado_manual && (
+                  <span title="Resultado manual — protegido contra sobrescrita">
+                    <ShieldCheck size={14} className="text-[var(--gold)]" />
+                  </span>
+                )}
               </div>
-              <div className="text-xs opacity-60 font-mono">
+              <div className="text-xs text-muted font-mono">
                 {data.toLocaleDateString("pt-BR")}{" "}
                 {data.toLocaleTimeString("pt-BR", {
                   hour: "2-digit",
@@ -177,7 +205,7 @@ export default function AdminPanel({
                   min="0"
                   value={golsA}
                   onChange={(e) => setGolsA(e.target.value)}
-                  className="w-14 py-1.5 bg-deep border border-yellow-400/40 rounded text-yellow-400 font-display text-lg text-center outline-none"
+                  className="w-14 py-1.5 bg-black/30 border border-[var(--gold)]/40 rounded text-[var(--gold)] font-display text-lg text-center outline-none"
                 />
                 <span>×</span>
                 <input
@@ -185,7 +213,7 @@ export default function AdminPanel({
                   min="0"
                   value={golsB}
                   onChange={(e) => setGolsB(e.target.value)}
-                  className="w-14 py-1.5 bg-deep border border-yellow-400/40 rounded text-yellow-400 font-display text-lg text-center outline-none"
+                  className="w-14 py-1.5 bg-black/30 border border-[var(--gold)]/40 rounded text-[var(--gold)] font-display text-lg text-center outline-none"
                 />
                 <button
                   onClick={() => salvarResultado(j.id)}
@@ -195,7 +223,8 @@ export default function AdminPanel({
                 </button>
                 <button
                   onClick={() => setEditando(null)}
-                  className="bg-white/10 text-white p-1.5 rounded"
+                  className="bg-white/10 p-1.5 rounded"
+                  style={{ color: "var(--text-primary)" }}
                 >
                   <X size={14} />
                 </button>
@@ -203,7 +232,7 @@ export default function AdminPanel({
             ) : (
               <>
                 {j.finalizado ? (
-                  <div className="font-display text-2xl text-yellow-400">
+                  <div className="font-display text-2xl text-[var(--gold)]">
                     {j.gols_a} × {j.gols_b}
                   </div>
                 ) : (
@@ -215,7 +244,7 @@ export default function AdminPanel({
                     setGolsA(j.gols_a?.toString() ?? "");
                     setGolsB(j.gols_b?.toString() ?? "");
                   }}
-                  className="border border-yellow-400/30 text-yellow-400 p-1.5 rounded"
+                  className="border border-[var(--gold)]/30 text-[var(--gold)] p-1.5 rounded"
                   title="Editar manualmente"
                 >
                   <Edit2 size={12} />
@@ -226,6 +255,15 @@ export default function AdminPanel({
                     className="border border-red-400/30 text-red-400 p-1.5 rounded text-xs"
                   >
                     LIMPAR
+                  </button>
+                )}
+                {j.resultado_manual && (
+                  <button
+                    onClick={() => liberarParaAutomatico(j.id)}
+                    className="border border-default text-muted hover:text-secondary text-[10px] px-2 py-1 rounded"
+                    title="Permitir que o cron sobrescreva este resultado"
+                  >
+                    LIBERAR
                   </button>
                 )}
               </>
