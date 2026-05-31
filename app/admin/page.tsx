@@ -13,7 +13,7 @@ export default async function PaginaAdmin() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("nome, is_admin").eq("id", user.id).single();
+    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).single();
 
   if (!profile?.is_admin) redirect("/jogos");
 
@@ -25,7 +25,12 @@ export default async function PaginaAdmin() {
 
   return (
     <>
-      <Header nome={profile.nome} isAdmin={true} userId={user.id} />
+      <Header
+        nome={profile.nome}
+        isAdmin={true}
+        userId={user.id}
+        fotoUrl={profile.foto_url}
+      />
       <main className="max-w-4xl mx-auto px-4 py-5 pb-24">
         <AdminPanel jogos={jogos || []} edgeFunctionUrl={edgeFunctionUrl} />
       </main>
