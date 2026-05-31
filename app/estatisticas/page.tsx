@@ -13,9 +13,8 @@ export default async function PaginaEstatisticas() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("nome, is_admin").eq("id", user.id).single();
+    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).single();
 
-  // Buscar todas as apostas do usuário com info do jogo
   const { data: apostas } = await supabase
     .from("apostas")
     .select("*, jogos(*)")
@@ -36,7 +35,6 @@ export default async function PaginaEstatisticas() {
     ? (totalPontos / apostasFinalizadas.length).toFixed(1)
     : "0";
 
-  // Sequência atual de acertos
   let sequenciaAtual = 0;
   for (const a of apostasFinalizadas) {
     if ((a.pontos || 0) > 0) sequenciaAtual++;
@@ -45,21 +43,24 @@ export default async function PaginaEstatisticas() {
 
   return (
     <>
-      <Header nome={profile?.nome || "Você"} isAdmin={!!profile?.is_admin} userId={user.id} />
+      <Header
+        nome={profile?.nome || "Você"}
+        isAdmin={!!profile?.is_admin}
+        userId={user.id}
+        fotoUrl={profile?.foto_url}
+      />
       <main className="max-w-4xl mx-auto px-4 py-5 pb-24">
         <div className="mb-6">
-          <div className="font-display text-4xl tracking-[4px] text-yellow-400 leading-none">
-            ESTATÍSTICAS
-          </div>
-          <div className="text-xs font-display tracking-[2px] opacity-60 mt-1">
+          <div className="title-stadium text-4xl leading-none">ESTATÍSTICAS</div>
+          <div className="text-xs font-display tracking-[2px] text-muted mt-1">
             SEU DESEMPENHO NO BOLÃO
           </div>
         </div>
 
         {apostasFinalizadas.length === 0 ? (
           <div className="scorecard rounded-xl p-8 text-center stagger-item">
-            <AlertCircle size={32} className="mx-auto text-yellow-400/60 mb-3" />
-            <p className="opacity-70">Sem estatísticas ainda.</p>
+            <AlertCircle size={32} className="mx-auto text-[var(--gold)]/60 mb-3" />
+            <p style={{ color: "var(--text-secondary)" }}>Sem estatísticas ainda.</p>
             <p className="text-sm text-muted mt-1">
               {apostasPendentes.length > 0
                 ? `Você tem ${apostasPendentes.length} ${apostasPendentes.length === 1 ? "palpite pendente" : "palpites pendentes"}.`
@@ -68,20 +69,19 @@ export default async function PaginaEstatisticas() {
           </div>
         ) : (
           <>
-            {/* Cards de estatísticas principais */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
               <div className="stagger-item scorecard rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1 text-yellow-400">
+                <div className="flex items-center gap-2 mb-1 text-[var(--gold)]">
                   <Award size={16} />
-                  <span className="text-[10px] font-display tracking-[2px] opacity-70">PONTOS</span>
+                  <span className="text-[10px] font-display tracking-[2px] text-muted">PONTOS</span>
                 </div>
-                <div className="font-score text-3xl text-yellow-400 font-bold">{totalPontos}</div>
+                <div className="font-score text-3xl text-[var(--gold)] font-bold">{totalPontos}</div>
               </div>
 
               <div className="stagger-item scorecard rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1 text-green-400">
                   <TrendingUp size={16} />
-                  <span className="text-[10px] font-display tracking-[2px] opacity-70">% ACERTO</span>
+                  <span className="text-[10px] font-display tracking-[2px] text-muted">% ACERTO</span>
                 </div>
                 <div className="font-score text-3xl text-green-400 font-bold">{taxaAcerto}%</div>
               </div>
@@ -89,32 +89,31 @@ export default async function PaginaEstatisticas() {
               <div className="stagger-item scorecard rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-1 text-orange-400">
                   <Flame size={16} />
-                  <span className="text-[10px] font-display tracking-[2px] opacity-70">SEQUÊNCIA</span>
+                  <span className="text-[10px] font-display tracking-[2px] text-muted">SEQUÊNCIA</span>
                 </div>
                 <div className="font-score text-3xl text-orange-400 font-bold">{sequenciaAtual}</div>
               </div>
 
               <div className="stagger-item scorecard rounded-xl p-4">
-                <div className="flex items-center gap-2 mb-1 text-secondary">
+                <div className="flex items-center gap-2 mb-1" style={{ color: "var(--text-primary)" }}>
                   <Target size={16} />
-                  <span className="text-[10px] font-display tracking-[2px] opacity-70">MÉDIA/JOGO</span>
+                  <span className="text-[10px] font-display tracking-[2px] text-muted">MÉDIA/JOGO</span>
                 </div>
-                <div className="font-score text-3xl text-white font-bold">{mediaPontos}</div>
+                <div className="font-score text-3xl font-bold" style={{ color: "var(--text-primary)" }}>{mediaPontos}</div>
               </div>
             </div>
 
-            {/* Breakdown por tipo de acerto */}
             <div className="scorecard rounded-xl p-5 mb-6 stagger-item">
-              <div className="font-display text-sm tracking-[2px] opacity-70 mb-4">
+              <div className="font-display text-sm tracking-[2px] text-muted mb-4">
                 BREAKDOWN
               </div>
               <div className="space-y-3">
                 <BarStat
-                  icon={<Target size={16} className="text-yellow-400" />}
+                  icon={<Target size={16} className="text-[var(--gold)]" />}
                   label="Placar exato"
                   valor={placaresExatos}
                   total={apostasFinalizadas.length}
-                  cor="bg-yellow-400"
+                  cor="bg-[var(--gold)]"
                   pontos={`+${placaresExatos * 5} pts`}
                 />
                 <BarStat
@@ -136,8 +135,7 @@ export default async function PaginaEstatisticas() {
               </div>
             </div>
 
-            {/* Histórico recente */}
-            <div className="font-display text-sm tracking-[2px] opacity-70 mb-3">
+            <div className="font-display text-sm tracking-[2px] text-muted mb-3">
               ÚLTIMOS 10 PALPITES
             </div>
             <div className="space-y-2">
@@ -151,8 +149,8 @@ export default async function PaginaEstatisticas() {
                   >
                     <Mini time={j.time_a} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
-                        {j.time_a} <span className="opacity-60">×</span> {j.time_b}
+                      <div className="font-medium text-sm truncate" style={{ color: "var(--text-primary)" }}>
+                        {j.time_a} <span className="text-muted">×</span> {j.time_b}
                       </div>
                       <div className="text-[10px] text-muted font-mono">
                         {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · {j.fase}
@@ -160,7 +158,7 @@ export default async function PaginaEstatisticas() {
                     </div>
                     <Mini time={j.time_b} />
                     <div className="text-right">
-                      <div className="font-mono text-sm text-yellow-400/80">
+                      <div className="font-mono text-sm text-[var(--gold)]/80">
                         {a.gols_a}-{a.gols_b}
                       </div>
                       <div className="font-mono text-[10px] text-muted">
@@ -170,7 +168,7 @@ export default async function PaginaEstatisticas() {
                     <div
                       className={`font-display text-xl font-bold min-w-[40px] text-right ${
                         a.pontos === 5
-                          ? "text-yellow-400"
+                          ? "text-[var(--gold)]"
                           : a.pontos === 3
                           ? "text-green-400"
                           : "text-faint"
@@ -199,13 +197,13 @@ function BarStat({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-primary)" }}>
           {icon}
           <span>{label}</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
-          <span className="opacity-60 font-mono">{valor}/{total}</span>
-          <span className="font-display tracking-wider opacity-80">{pontos}</span>
+          <span className="text-muted font-mono">{valor}/{total}</span>
+          <span className="font-display tracking-wider" style={{ color: "var(--text-secondary)" }}>{pontos}</span>
         </div>
       </div>
       <div className="h-2 bg-white/5 rounded-full overflow-hidden">
@@ -222,7 +220,7 @@ function Mini({ time }: { time: string }) {
   const url = getBandeiraCircularUrl(time);
   if (!url) {
     return (
-      <div className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-[9px] font-bold opacity-60 flex-shrink-0">
+      <div className="w-7 h-7 rounded-full bg-[var(--border-default)] flex items-center justify-center text-[9px] font-bold text-muted flex-shrink-0">
         {time.substring(0, 2).toUpperCase()}
       </div>
     );
@@ -231,7 +229,7 @@ function Mini({ time }: { time: string }) {
     <img
       src={url}
       alt={time}
-      className="w-7 h-7 rounded-full object-cover ring-1 ring-white/10 flex-shrink-0"
+      className="w-7 h-7 rounded-full object-cover ring-1 ring-default flex-shrink-0"
     />
   );
 }
