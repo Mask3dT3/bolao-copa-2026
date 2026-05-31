@@ -1,4 +1,4 @@
-="use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -81,7 +81,6 @@ export default function Header({ nome, isAdmin, userId, fotoUrl }: Props) {
           </div>
         </div>
 
-        {/* Desktop tabs */}
         <nav className="hidden md:flex gap-1 mt-5 overflow-x-auto">
           {tabs.map(({ href, label, icon: Icon }) => {
             const ativa = path === href;
