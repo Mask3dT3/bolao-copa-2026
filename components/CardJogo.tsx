@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase-browser";
 import { Lock, Check, Edit2, Share2, Clock, EyeOff } from "lucide-react";
 import { getBandeiraCircularUrl } from "@/lib/bandeiras";
 import { useToast } from "./ToastProvider";
+import Avatar from "./Avatar";
 
 type Aposta = {
   id?: number;
@@ -14,7 +15,7 @@ type Aposta = {
   gols_b: number | null;
   pontos?: number | null;
   revelado?: boolean;
-  profiles?: { nome: string };
+  profiles?: { nome: string; foto_url?: string | null };
 };
 
 type Props = {
@@ -301,7 +302,6 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
         </div>
       )}
 
-      {/* Lista de palpites — nomes sempre, placares só após kickoff */}
       {todasApostas.length > 0 && (
         <details className="mt-4 border-t border-default pt-3 group">
           <summary className="cursor-pointer text-xs text-secondary font-display tracking-[2px] flex items-center justify-between list-none">
@@ -326,11 +326,17 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
               return (
                 <div
                   key={a.user_id}
-                  className={`grid grid-cols-[1fr_auto_auto] gap-3 text-sm py-1.5 px-2 rounded items-center ${
+                  className={`grid grid-cols-[auto_1fr_auto_auto] gap-3 text-sm py-1.5 px-2 rounded items-center ${
                     isMe ? "bg-[var(--gold)]/5" : ""
                   }`}
                 >
-                  <span className="font-medium truncate">
+                  <Avatar
+                    nome={a.profiles?.nome || "Anônimo"}
+                    fotoUrl={a.profiles?.foto_url || null}
+                    size={28}
+                    ring={false}
+                  />
+                  <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>
                     {a.profiles?.nome || "Anônimo"}
                     {isMe && <span className="text-[var(--gold)]/70 text-xs ml-1">(você)</span>}
                   </span>
