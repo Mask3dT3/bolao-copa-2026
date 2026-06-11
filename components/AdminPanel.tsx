@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { useToast } from "./ToastProvider";
-import { RefreshCw, Edit2, Check, X, Zap, ShieldCheck } from "lucide-react";
+import { RefreshCw, Edit2, Check, X, Zap, ShieldCheck, AlertTriangle, Clock } from "lucide-react";
 
 type Jogo = {
   id: number;
@@ -22,9 +22,11 @@ type Jogo = {
 
 export default function AdminPanel({
   jogos,
+  jogosPendentes,
   edgeFunctionUrl,
 }: {
   jogos: Jogo[];
+  jogosPendentes: Jogo[];
   edgeFunctionUrl: string;
 }) {
   const router = useRouter();
@@ -60,8 +62,11 @@ export default function AdminPanel({
         const preservados = data.preservados_manuais
           ? ` · ${data.preservados_manuais} manuais preservados`
           : "";
+        const pendentes = data.pendentes_sem_resultado
+          ? ` · ⚠️ ${data.pendentes_sem_resultado} pendentes na API`
+          : "";
         setMsg(
-          `✅ ${data.inseridos || 0} novos · ${data.atualizados || 0} atualizados${preservados}`
+          `✅ ${data.inseridos || 0} novos · ${data.atualizados || 0} atualizados${preservados}${pendentes}`
         );
         router.refresh();
       } else {
@@ -123,11 +128,73 @@ export default function AdminPanel({
     router.refresh();
   }
 
+  function iniciarEdicao(j: Jogo) {
+    setEditando(j.id);
+    setGolsA(j.gols_a?.toString() ?? "");
+    setGolsB(j.gols_b?.toString() ?? "");
+  }
+
   return (
     <div>
       <div className="font-display text-3xl tracking-[4px] text-red-400 mb-5">
         ⚙ PAINEL ADMIN
       </div>
+
+      {/* NOVO: Alerta de jogos pendentes */}
+      {jogosPendentes.length > 0 && (
+        <div className="bg-orange-400/10 border border-orange-400/40 rounded-lg p-4 mb-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle size={20} className="text-orange-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-display text-sm tracking-[2px] text-orange-400 mb-2">
+                {jogosPendentes.length} JOGO{jogosPendentes.length > 1 ? "S" : ""} AGUARDANDO RESULTADO
+              </div>
+              <p className="text-sm text-secondary mb-3 leading-relaxed">
+                Esses jogos já deveriam ter terminado mas a Football-Data ainda não publicou.
+                Você pode inserir o resultado manualmente — o cron não vai sobrescrever (escudo 🛡️).
+              </p>
+              <div className="space-y-2">
+                {jogosPendentes.map((j) => {
+                  const dataJogo = new Date(j.data_jogo);
+                  const horasDesde = Math.floor(
+                    (Date.now() - dataJogo.getTime()) / (1000 * 60 * 60)
+                  );
+                  return (
+                    <div
+                      key={j.id}
+                      className="flex items-center justify-between gap-2 bg-orange-400/5 border border-orange-400/20 rounded p-2.5 flex-wrap"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Clock size={12} className="text-orange-400" />
+                        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                          {j.time_a} × {j.time_b}
+                        </span>
+                        <span className="text-xs text-muted">
+                          começou há {horasDesde}h
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          iniciarEdicao(j);
+                          setTimeout(() => {
+                            document.getElementById(`jogo-${j.id}`)?.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                          }, 100);
+                        }}
+                        className="bg-orange-400 text-black text-xs font-display tracking-[1.5px] px-3 py-1.5 rounded font-bold"
+                      >
+                        INSERIR RESULTADO
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="bg-green-400/5 border border-green-400/30 rounded p-4 mb-5">
         <div className="flex items-center gap-2 font-display text-sm tracking-[2px] text-green-400 mb-2">
@@ -174,10 +241,16 @@ export default function AdminPanel({
 
       {jogos.map((j) => {
         const data = new Date(j.data_jogo);
+        const ehPendente = jogosPendentes.some(p => p.id === j.id);
         return (
           <div
             key={j.id}
-            className="bg-white/[0.03] border border-default rounded p-3 mb-2 flex items-center gap-3 text-sm flex-wrap"
+            id={`jogo-${j.id}`}
+            className={`border rounded p-3 mb-2 flex items-center gap-3 text-sm flex-wrap ${
+              ehPendente
+                ? "bg-orange-400/[0.07] border-orange-400/40"
+                : "bg-white/[0.03] border-default"
+            }`}
           >
             <div className="flex-1 min-w-[200px]">
               <div className="font-semibold flex items-center gap-2" style={{ color: "var(--text-primary)" }}>
@@ -185,6 +258,11 @@ export default function AdminPanel({
                 {j.resultado_manual && (
                   <span title="Resultado manual — protegido contra sobrescrita">
                     <ShieldCheck size={14} className="text-[var(--gold)]" />
+                  </span>
+                )}
+                {ehPendente && (
+                  <span title="Jogo já terminou mas API ainda não atualizou">
+                    <AlertTriangle size={14} className="text-orange-400" />
                   </span>
                 )}
               </div>
@@ -239,11 +317,7 @@ export default function AdminPanel({
                   <div className="text-muted text-sm">sem resultado</div>
                 )}
                 <button
-                  onClick={() => {
-                    setEditando(j.id);
-                    setGolsA(j.gols_a?.toString() ?? "");
-                    setGolsB(j.gols_b?.toString() ?? "");
-                  }}
+                  onClick={() => iniciarEdicao(j)}
                   className="border border-[var(--gold)]/30 text-[var(--gold)] p-1.5 rounded"
                   title="Editar manualmente"
                 >
