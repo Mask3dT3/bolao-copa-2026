@@ -20,6 +20,14 @@ export default async function PaginaAdmin() {
   const { data: jogos } = await supabase
     .from("jogos").select("*").order("data_jogo", { ascending: true });
 
+  // Detecta jogos pendentes: passaram mais de 2h da hora marcada e ainda sem resultado
+  const agora = new Date();
+  const jogosPendentes = (jogos || []).filter((j: any) => {
+    const dataJogo = new Date(j.data_jogo);
+    const horasDesde = (agora.getTime() - dataJogo.getTime()) / (1000 * 60 * 60);
+    return horasDesde > 2 && !j.finalizado;
+  });
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const edgeFunctionUrl = `${supabaseUrl}/functions/v1/atualiza-jogos`;
 
@@ -32,7 +40,11 @@ export default async function PaginaAdmin() {
         fotoUrl={profile.foto_url}
       />
       <main className="max-w-4xl mx-auto px-4 py-5 pb-24">
-        <AdminPanel jogos={jogos || []} edgeFunctionUrl={edgeFunctionUrl} />
+        <AdminPanel
+          jogos={jogos || []}
+          jogosPendentes={jogosPendentes}
+          edgeFunctionUrl={edgeFunctionUrl}
+        />
       </main>
       <BottomNav isAdmin={true} />
     </>
