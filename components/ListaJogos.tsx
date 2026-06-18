@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import CardJogo from "./CardJogo";
 import TabelaClassificacao from "./TabelaClassificacao";
 import {
@@ -10,7 +10,7 @@ import {
   JogoGrupo,
   PalpiteUsuario,
 } from "@/lib/classificacao";
-import { Sparkles, Calendar, Grid3x3, Trophy } from "lucide-react";
+import { Sparkles, Calendar, Grid3x3, Trophy, ChevronDown } from "lucide-react";
 
 type Jogo = JogoGrupo & {
   id: number;
@@ -32,8 +32,79 @@ type Aposta = {
 type Modo = "data" | "grupo";
 
 // Lista FIXA dos 12 grupos da Copa 2026 (A-L) + Mata-mata
-// Garante que mata-mata sempre apareça mesmo sem jogos cadastrados ainda
 const GRUPOS_FIXOS = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+
+// Formata contagem regressiva: >1d => "2d 5h"; 1-24h => "5h 03m"; <1h => "12:34"
+function formatarCountdown(ms: number): string {
+  if (ms <= 0) return "";
+  const totalSeg = Math.floor(ms / 1000);
+  const dias = Math.floor(totalSeg / 86400);
+  const horas = Math.floor((totalSeg % 86400) / 3600);
+  const min = Math.floor((totalSeg % 3600) / 60);
+  const seg = totalSeg % 60;
+  if (dias >= 1) return `${dias}d ${horas}h`;
+  if (horas >= 1) return `${horas}h ${String(min).padStart(2, "0")}m`;
+  return `${min}:${String(seg).padStart(2, "0")}`;
+}
+
+// Banner do jogo de agora / próximo, com contagem regressiva ao vivo
+function BannerFoco({ jogo, onVer }: { jogo: Jogo; onVer: () => void }) {
+  const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setAgoraMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const data = new Date(jogo.data_jogo);
+  const msRestante = data.getTime() - agoraMs;
+  const aoVivo = msRestante <= 0 && !jogo.finalizado;
+
+  return (
+    <div className="mb-4 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] p-4 flex items-center gap-3 stagger-item">
+      <div className="flex-1 min-w-0">
+        <div
+          className={`font-display text-[10px] tracking-[2px] flex items-center gap-1.5 ${
+            aoVivo ? "text-red-400" : "text-[var(--gold)]"
+          }`}
+        >
+          {aoVivo ? (
+            <>
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+              </span>
+              AO VIVO AGORA
+            </>
+          ) : (
+            "PRÓXIMO JOGO"
+          )}
+        </div>
+        <div className="font-semibold truncate mt-0.5">
+          {jogo.time_a} <span className="text-faint">×</span> {jogo.time_b}
+        </div>
+        <div className="text-xs text-muted font-mono mt-0.5">
+          {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} ·{" "}
+          {data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        {aoVivo ? (
+          <div className="font-display text-xs tracking-[1px] text-red-400">EM ANDAMENTO</div>
+        ) : (
+          <div className="font-score font-bold text-2xl text-[var(--gold)] leading-none">
+            {formatarCountdown(msRestante)}
+          </div>
+        )}
+        <button
+          onClick={onVer}
+          className="mt-2 inline-flex items-center gap-1 text-[10px] font-display tracking-[1.5px] text-secondary hover:text-primary border border-default hover:border-strong rounded-full px-2.5 py-1"
+        >
+          VER <ChevronDown size={12} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function ListaJogos({
   jogos,
@@ -46,21 +117,16 @@ export default function ListaJogos({
   minhasApostas: Record<number, Aposta>;
   userId: string;
 }) {
-  const [modo, setModo] = useState<Modo>("grupo");
+  const [modo, setModo] = useState<Modo>("data"); // POR DATA é o padrão ao abrir
   const [grupoAtivo, setGrupoAtivo] = useState<string>("Grupo A");
-  const [filtroData, setFiltroData] = useState<"todos" | "pendentes" | "proximos" | "encerrados">("todos");
+  const [filtroData, setFiltroData] = useState<"todos" | "pendentes" | "proximos" | "encerrados">(
+    "todos"
+  );
 
+  const focoRef = useRef<HTMLDivElement | null>(null);
   const agora = new Date();
 
-  // Define grupo inicial baseado no que existe
   const gruposDisponiveis = useMemo(() => listarGrupos(jogos), [jogos]);
-
-  // Lista completa: sempre mostra todos os grupos da Copa + Mata-mata
-  const todosGrupos = useMemo(() => {
-    const lista: string[] = GRUPOS_FIXOS.map((l) => `Grupo ${l}`);
-    lista.push("Mata-mata");
-    return lista;
-  }, []);
 
   const jogosDoGrupo = useMemo(() => {
     if (modo !== "grupo" || !grupoAtivo) return [];
@@ -68,9 +134,10 @@ export default function ListaJogos({
     return agrupados[grupoAtivo] || [];
   }, [jogos, grupoAtivo, modo]);
 
+  // Lista por data: SEMPRE em ordem cronológica (ascendente)
   const jogosPorData = useMemo(() => {
     if (modo !== "data") return [];
-    return jogos.filter((j) => {
+    const filtrados = jogos.filter((j) => {
       const data = new Date(j.data_jogo);
       const jaComecou = data <= agora;
       const finalizado = j.finalizado;
@@ -87,11 +154,50 @@ export default function ListaJogos({
           return true;
       }
     });
+    return filtrados.sort(
+      (a, b) => new Date(a.data_jogo).getTime() - new Date(b.data_jogo).getTime()
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jogos, filtroData, minhasApostas, modo]);
+
+  // Jogo "foco": ao vivo agora -> senão o próximo a acontecer -> senão o último encerrado
+  const foco = useMemo<Jogo | null>(() => {
+    if (modo !== "data" || jogos.length === 0) return null;
+    const ordenados = [...jogos].sort(
+      (a, b) => new Date(a.data_jogo).getTime() - new Date(b.data_jogo).getTime()
+    );
+    const t = Date.now();
+    const aoVivo = ordenados.find(
+      (j) => new Date(j.data_jogo).getTime() <= t && !j.finalizado
+    );
+    if (aoVivo) return aoVivo;
+    const proximo = ordenados.find(
+      (j) => new Date(j.data_jogo).getTime() > t && !j.finalizado
+    );
+    if (proximo) return proximo;
+    const encerrados = ordenados.filter((j) => j.finalizado);
+    return encerrados.length ? encerrados[encerrados.length - 1] : ordenados[ordenados.length - 1];
+  }, [jogos, modo]);
+
+  const focoVisivel = useMemo(
+    () => !!foco && jogosPorData.some((j) => j.id === foco.id),
+    [foco, jogosPorData]
+  );
+
+  function rolarParaFoco() {
+    focoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // Rola até o jogo de agora/próximo quando entra no modo data com filtro "Todos"
+  useEffect(() => {
+    if (modo === "data" && filtroData === "todos" && focoVisivel) {
+      const t = setTimeout(rolarParaFoco, 150);
+      return () => clearTimeout(t);
+    }
+  }, [modo, filtroData, focoVisivel]);
 
   const ehGrupo = grupoAtivo !== "Mata-mata" && grupoAtivo !== "";
 
-  // Tabela de classificação (só pra grupos)
   const classificacaoReal = useMemo(() => {
     if (!ehGrupo) return [];
     return calcularClassificacao(jogosDoGrupo, null);
@@ -117,7 +223,6 @@ export default function ListaJogos({
   const temPalpitesNoGrupo = meusPalpites.length > 0;
   const temJogosFinalizados = jogosDoGrupo.some((j) => j.finalizado);
 
-  // Contadores para o modo "data"
   const contadores = useMemo(() => {
     if (modo !== "data") return { pendentes: 0, proximos: 0, encerrados: 0 };
     const pendentes = jogos.filter((j) => {
@@ -130,23 +235,14 @@ export default function ListaJogos({
     }).length;
     const encerrados = jogos.filter((j) => j.finalizado).length;
     return { pendentes, proximos, encerrados };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jogos, minhasApostas, modo]);
 
   return (
     <div>
-      {/* Toggle Por data / Por grupo */}
+      {/* Toggle — POR DATA primeiro */}
       <div className="flex justify-center mb-4">
         <div className="inline-flex p-1 bg-[var(--bg-card)] border border-default rounded-xl">
-          <button
-            onClick={() => setModo("grupo")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-display tracking-[1.5px] transition ${
-              modo === "grupo"
-                ? "bg-[var(--gold)] text-black font-bold"
-                : "text-secondary hover:text-primary"
-            }`}
-          >
-            <Grid3x3 size={13} /> POR GRUPO
-          </button>
           <button
             onClick={() => setModo("data")}
             className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-display tracking-[1.5px] transition ${
@@ -157,13 +253,22 @@ export default function ListaJogos({
           >
             <Calendar size={13} /> POR DATA
           </button>
+          <button
+            onClick={() => setModo("grupo")}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-display tracking-[1.5px] transition ${
+              modo === "grupo"
+                ? "bg-[var(--gold)] text-black font-bold"
+                : "text-secondary hover:text-primary"
+            }`}
+          >
+            <Grid3x3 size={13} /> POR GRUPO
+          </button>
         </div>
       </div>
 
-      {/* MODO POR GRUPO: grid de seleção + tabela + jogos */}
+      {/* MODO POR GRUPO */}
       {modo === "grupo" && (
         <>
-          {/* Grid de grupos (4 colunas em mobile, 7 em desktop) */}
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-5">
             {GRUPOS_FIXOS.map((letra) => {
               const grupo = `Grupo ${letra}`;
@@ -190,7 +295,6 @@ export default function ListaJogos({
                 </button>
               );
             })}
-            {/* Mata-mata - ocupa 4 colunas em mobile, 1 em desktop */}
             <button
               onClick={() => setGrupoAtivo("Mata-mata")}
               className={`col-span-4 sm:col-span-1 relative py-2.5 rounded-lg text-sm font-display tracking-wider transition flex items-center justify-center gap-1.5 ${
@@ -204,7 +308,6 @@ export default function ListaJogos({
             </button>
           </div>
 
-          {/* Tabela de classificação (só pra grupos) */}
           {ehGrupo && jogosDoGrupo.length > 0 && (
             <div className="mb-6 stagger-item">
               {temPalpitesNoGrupo && (
@@ -235,7 +338,8 @@ export default function ListaJogos({
               {!temJogosFinalizados && !temPalpitesNoGrupo ? (
                 <div className="scorecard rounded-2xl px-4 py-8 text-center">
                   <p className="text-sm text-muted">
-                    Sem jogos finalizados ainda. Palpite nos jogos abaixo pra ver a classificação simulada.
+                    Sem jogos finalizados ainda. Palpite nos jogos abaixo pra ver a classificação
+                    simulada.
                   </p>
                 </div>
               ) : modoTabela === "simulado" && temPalpitesNoGrupo ? (
@@ -253,14 +357,13 @@ export default function ListaJogos({
             </div>
           )}
 
-          {/* Mata-mata: aviso especial se não tem jogos */}
           {grupoAtivo === "Mata-mata" && jogosDoGrupo.length === 0 && (
             <div className="scorecard rounded-2xl px-6 py-12 text-center stagger-item">
               <Trophy size={48} className="mx-auto text-[var(--gold)]/40 mb-3" />
               <p className="font-display tracking-[2px] text-sm text-muted">AGUARDANDO</p>
               <p className="text-secondary mt-2 max-w-md mx-auto">
-                Os jogos do mata-mata vão aparecer aqui automaticamente assim que
-                os times se classificarem na fase de grupos.
+                Os jogos do mata-mata vão aparecer aqui automaticamente assim que os times se
+                classificarem na fase de grupos.
               </p>
               <p className="text-xs text-muted mt-4">
                 A Football-Data.org libera os fixtures conforme os grupos terminam.
@@ -268,7 +371,6 @@ export default function ListaJogos({
             </div>
           )}
 
-          {/* Jogos do grupo */}
           {jogosDoGrupo.length > 0 && (
             <>
               <div className="font-display text-sm tracking-[2px] text-muted mb-3 mt-2">
@@ -286,7 +388,6 @@ export default function ListaJogos({
             </>
           )}
 
-          {/* Grupos sem jogos ainda */}
           {ehGrupo && jogosDoGrupo.length === 0 && (
             <div className="text-center py-12 text-muted stagger-item">
               <p className="text-3xl mb-2 text-muted">⚽</p>
@@ -302,6 +403,11 @@ export default function ListaJogos({
       {/* MODO POR DATA */}
       {modo === "data" && (
         <>
+          {/* Banner do jogo de agora / próximo */}
+          {foco && !foco.finalizado && focoVisivel && (
+            <BannerFoco jogo={foco} onVer={rolarParaFoco} />
+          )}
+
           {/* Filtros */}
           <div className="flex gap-2 overflow-x-auto pb-3 mb-2 -mx-1 px-1">
             {[
@@ -322,7 +428,9 @@ export default function ListaJogos({
                   }`}
                 >
                   {f.label.toUpperCase()}
-                  <span className={`text-[10px] font-mono ${ativo ? "text-black/60" : "text-muted"}`}>
+                  <span
+                    className={`text-[10px] font-mono ${ativo ? "text-black/60" : "text-muted"}`}
+                  >
                     {f.count}
                   </span>
                 </button>
@@ -330,22 +438,34 @@ export default function ListaJogos({
             })}
           </div>
 
-          {/* Lista */}
+          {/* Lista cronológica */}
           {jogosPorData.length === 0 ? (
             <div className="text-center py-16 text-muted">
               <p className="text-2xl mb-2 text-faint">🏟️</p>
               <p className="text-sm">Nenhum jogo nesse filtro.</p>
             </div>
           ) : (
-            jogosPorData.map((jogo) => (
-              <CardJogo
-                key={jogo.id}
-                jogo={jogo as any}
-                minhaAposta={(minhasApostas[jogo.id] as any) || null}
-                todasApostas={(apostasPorJogo[jogo.id] || []) as any}
-                userId={userId}
-              />
-            ))
+            jogosPorData.map((jogo) => {
+              const ehFoco = !!foco && jogo.id === foco.id;
+              return (
+                <div
+                  key={jogo.id}
+                  ref={ehFoco ? focoRef : undefined}
+                  className={
+                    ehFoco
+                      ? "rounded-2xl scroll-mt-24 ring-2 ring-[var(--gold)]/60"
+                      : undefined
+                  }
+                >
+                  <CardJogo
+                    jogo={jogo as any}
+                    minhaAposta={(minhasApostas[jogo.id] as any) || null}
+                    todasApostas={(apostasPorJogo[jogo.id] || []) as any}
+                    userId={userId}
+                  />
+                </div>
+              );
+            })
           )}
         </>
       )}
