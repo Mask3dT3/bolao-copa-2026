@@ -46,10 +46,7 @@ function ordenarRanking(rows: RankRow[]): RankComPos[] {
   });
 }
 
-const MEDALHAS: Record
-  number,
-  { emoji: string; nome: string; borda: string; texto: string }
-> = {
+const MEDALHAS: Record<number, { emoji: string; nome: string; borda: string; texto: string }> = {
   1: { emoji: "🥇", nome: "1º LUGAR", borda: "border-yellow-400/40", texto: "text-yellow-400" },
   2: { emoji: "🥈", nome: "2º LUGAR", borda: "border-gray-400/40", texto: "text-gray-300" },
   3: { emoji: "🥉", nome: "3º LUGAR", borda: "border-orange-500/40", texto: "text-orange-400" },
