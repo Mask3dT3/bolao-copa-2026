@@ -195,22 +195,13 @@ export default function ListaJogos({
     return encerrados.length ? encerrados[encerrados.length - 1] : ordenados[ordenados.length - 1];
   }, [jogos, modo]);
 
-  const focoVisivel = useMemo(
-    () => !!foco && jogosPorData.some((j) => j.id === foco.id),
-    [foco, jogosPorData]
-  );
-
   function rolarParaFoco() {
-    focoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // garante que o jogo em foco esteja na lista atual, depois rola até ele
+    setFiltroData("todos");
+    setTimeout(() => {
+      focoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
   }
-
-  // Rola até o jogo de agora/próximo quando entra no modo data com filtro "Todos"
-  useEffect(() => {
-    if (modo === "data" && filtroData === "todos" && focoVisivel) {
-      const t = setTimeout(rolarParaFoco, 150);
-      return () => clearTimeout(t);
-    }
-  }, [modo, filtroData, focoVisivel]);
 
   const ehGrupo = grupoAtivo !== "Mata-mata" && grupoAtivo !== "";
 
@@ -460,7 +451,7 @@ export default function ListaJogos({
       {modo === "data" && (
         <div className="mt-4">
           {/* Banner do jogo de agora / próximo */}
-          {foco && !foco.finalizado && focoVisivel && (
+          {foco && !foco.finalizado && (
             <BannerFoco jogo={foco} onVer={rolarParaFoco} />
           )}
 
