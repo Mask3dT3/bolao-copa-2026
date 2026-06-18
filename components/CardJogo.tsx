@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { Lock, Check, Edit2, Share2, Clock, EyeOff } from "lucide-react";
 import { getBandeiraCircularUrl } from "@/lib/bandeiras";
 import { useToast } from "./ToastProvider";
-import Avatar from "./Avatar";
 
 type Aposta = {
   id?: number;
@@ -15,7 +14,7 @@ type Aposta = {
   gols_b: number | null;
   pontos?: number | null;
   revelado?: boolean;
-  profiles?: { nome: string; foto_url?: string | null };
+  profiles?: { nome: string };
 };
 
 type Props = {
@@ -60,18 +59,17 @@ function Bandeira({ time, size = 48 }: { time: string; size?: number }) {
   );
 }
 
-function formatarTempoRestante(data: Date): string | null {
-  const agora = new Date();
-  const diff = data.getTime() - agora.getTime();
-  if (diff < 0) return null;
-  const min = Math.floor(diff / 60000);
-  const horas = Math.floor(min / 60);
-  const dias = Math.floor(horas / 24);
-  if (dias > 1) return `${dias} dias`;
-  if (dias === 1) return "Amanhã";
-  if (horas > 1) return `${horas}h`;
-  if (horas === 1) return "1h";
-  return `${min} min`;
+// Formata a contagem regressiva: > 1 dia => "2d 5h"; 1-24h => "5h 03m"; < 1h => "12:34" (mm:ss)
+function formatarCountdown(ms: number): string {
+  if (ms <= 0) return "";
+  const totalSeg = Math.floor(ms / 1000);
+  const dias = Math.floor(totalSeg / 86400);
+  const horas = Math.floor((totalSeg % 86400) / 3600);
+  const min = Math.floor((totalSeg % 3600) / 60);
+  const seg = totalSeg % 60;
+  if (dias >= 1) return `${dias}d ${horas}h`;
+  if (horas >= 1) return `${horas}h ${String(min).padStart(2, "0")}m`;
+  return `${min}:${String(seg).padStart(2, "0")}`;
 }
 
 export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Props) {
@@ -83,11 +81,25 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
   const [aposta, setAposta] = useState(minhaAposta);
 
   const dataJogo = new Date(jogo.data_jogo);
-  const agora = new Date();
-  const jaComecou = agora >= dataJogo;
+
+  // Relógio reativo (faz a contagem regressiva e o "AO VIVO" virarem sozinhos)
+  const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (jogo.finalizado) return;
+    const faltaNoMount = dataJogo.getTime() - Date.now();
+    // só liga o relógio se o jogo está perto (faltando < 24h) ou já em andamento
+    if (faltaNoMount >= 24 * 3600000) return;
+    const id = setInterval(() => setAgoraMs(Date.now()), 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jogo.data_jogo, jogo.finalizado]);
+
+  const msRestante = dataJogo.getTime() - agoraMs;
+  const jaComecou = msRestante <= 0;
   const fechado = jaComecou || jogo.finalizado;
-  const tempoRestante = formatarTempoRestante(dataJogo);
-  const proximo = tempoRestante && (dataJogo.getTime() - agora.getTime()) < 3600000;
+  const aoVivo = jaComecou && !jogo.finalizado;
+  const urgente = !jaComecou && msRestante < 3600000; // falta menos de 1h pra fechar
+  const countdown = formatarCountdown(msRestante);
 
   async function salvar() {
     if (golsA === "" || golsB === "") return;
@@ -154,19 +166,35 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
           {dataJogo.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} ·{" "}
           {dataJogo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
         </span>
-        {proximo && !fechado && (
-          <span className="ml-auto flex items-center gap-1 font-display text-[10px] tracking-[1px] bg-orange-400/15 text-orange-400 px-2 py-0.5 rounded-full pulse-glow">
-            ⏰ EM {tempoRestante}
+
+        {/* AO VIVO — jogo começou e ainda não foi finalizado */}
+        {aoVivo && (
+          <span className="ml-auto flex items-center gap-1.5 font-display text-[10px] tracking-[1px] bg-red-500/15 text-red-400 px-2 py-0.5 rounded-full">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
+            </span>
+            AO VIVO
           </span>
         )}
+
+        {/* Contagem regressiva — jogo ainda não começou */}
+        {!jogo.finalizado && !jaComecou && (
+          <span
+            className={`ml-auto flex items-center gap-1 font-display text-[10px] tracking-[1px] px-2 py-0.5 rounded-full ${
+              urgente
+                ? "bg-orange-400/15 text-orange-400 pulse-glow"
+                : "bg-[var(--gold)]/10 text-[var(--gold)]/90"
+            }`}
+          >
+            {urgente ? "⏰ FECHA EM " : "⏳ "}
+            {countdown}
+          </span>
+        )}
+
         {jogo.finalizado && (
           <span className="ml-auto flex items-center gap-1 font-display text-[10px] tracking-[1px] bg-green-400/15 text-green-400 px-2 py-0.5 rounded-full">
             <Check size={10} /> ENCERRADO
-          </span>
-        )}
-        {fechado && !jogo.finalizado && (
-          <span className="ml-auto flex items-center gap-1 font-display text-[10px] tracking-[1px] bg-red-400/15 text-red-400 px-2 py-0.5 rounded-full">
-            <Lock size={10} /> FECHADO
           </span>
         )}
       </div>
@@ -297,11 +325,12 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
       )}
 
       {fechado && !jogo.finalizado && !aposta && (
-        <div className="text-center py-3 text-muted text-xs font-display tracking-[2px] mt-3">
-          VOCÊ NÃO APOSTOU · AGUARDANDO RESULTADO
+        <div className="text-center py-3 text-muted text-xs font-display tracking-[2px] mt-3 flex items-center justify-center gap-1.5">
+          <Lock size={11} /> VOCÊ NÃO APOSTOU · AGUARDANDO RESULTADO
         </div>
       )}
 
+      {/* Lista de palpites — nomes sempre, placares só após kickoff */}
       {todasApostas.length > 0 && (
         <details className="mt-4 border-t border-default pt-3 group">
           <summary className="cursor-pointer text-xs text-secondary font-display tracking-[2px] flex items-center justify-between list-none">
@@ -320,30 +349,24 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
               const pts = jogo.finalizado ? pontosDe(a) : null;
               const isMe = a.user_id === userId;
               const placarVisivel = isMe || fechado || a.revelado === true;
-              const golsA = a.gols_a;
-              const golsB = a.gols_b;
+              const golsAp = a.gols_a;
+              const golsBp = a.gols_b;
 
               return (
                 <div
                   key={a.user_id}
-                  className={`grid grid-cols-[auto_1fr_auto_auto] gap-3 text-sm py-1.5 px-2 rounded items-center ${
+                  className={`grid grid-cols-[1fr_auto_auto] gap-3 text-sm py-1.5 px-2 rounded items-center ${
                     isMe ? "bg-[var(--gold)]/5" : ""
                   }`}
                 >
-                  <Avatar
-                    nome={a.profiles?.nome || "Anônimo"}
-                    fotoUrl={a.profiles?.foto_url || null}
-                    size={28}
-                    ring={false}
-                  />
-                  <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                  <span className="font-medium truncate">
                     {a.profiles?.nome || "Anônimo"}
                     {isMe && <span className="text-[var(--gold)]/70 text-xs ml-1">(você)</span>}
                   </span>
 
-                  {placarVisivel && golsA !== null && golsB !== null ? (
+                  {placarVisivel && golsAp !== null && golsBp !== null ? (
                     <span className="font-mono font-bold text-[var(--gold)]/90">
-                      {golsA} × {golsB}
+                      {golsAp} × {golsBp}
                     </span>
                   ) : (
                     <span className="font-mono text-muted flex items-center gap-1">
