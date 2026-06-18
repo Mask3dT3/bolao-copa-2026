@@ -126,6 +126,22 @@ export default function ListaJogos({
   const focoRef = useRef<HTMLDivElement | null>(null);
   const agora = new Date();
 
+  // Mede a altura do cabeçalho fixo pra encaixar a barra de filtros logo abaixo dele
+  const [topo, setTopo] = useState(0);
+  useEffect(() => {
+    const medir = () => {
+      const header = document.querySelector("header");
+      setTopo(header ? Math.round(header.getBoundingClientRect().height) : 0);
+    };
+    medir();
+    const t = setTimeout(medir, 300); // remede depois que fontes/imagens carregam
+    window.addEventListener("resize", medir);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("resize", medir);
+    };
+  }, []);
+
   const gruposDisponiveis = useMemo(() => listarGrupos(jogos), [jogos]);
 
   const jogosDoGrupo = useMemo(() => {
@@ -238,37 +254,77 @@ export default function ListaJogos({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jogos, minhasApostas, modo]);
 
+  const filtros = [
+    { key: "todos", label: "Todos", count: jogos.length },
+    { key: "pendentes", label: "Sem palpite", count: contadores.pendentes },
+    { key: "proximos", label: "Próximos", count: contadores.proximos },
+    { key: "encerrados", label: "Encerrados", count: contadores.encerrados },
+  ];
+
   return (
     <div>
-      {/* Toggle — POR DATA primeiro */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex p-1 bg-[var(--bg-card)] border border-default rounded-xl">
-          <button
-            onClick={() => setModo("data")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-display tracking-[1.5px] transition ${
-              modo === "data"
-                ? "bg-[var(--gold)] text-black font-bold"
-                : "text-secondary hover:text-primary"
-            }`}
-          >
-            <Calendar size={13} /> POR DATA
-          </button>
-          <button
-            onClick={() => setModo("grupo")}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-display tracking-[1.5px] transition ${
-              modo === "grupo"
-                ? "bg-[var(--gold)] text-black font-bold"
-                : "text-secondary hover:text-primary"
-            }`}
-          >
-            <Grid3x3 size={13} /> POR GRUPO
-          </button>
+      {/* Barra de controles fixa (gruda logo abaixo do cabeçalho) */}
+      <div
+        className="sticky z-30 -mx-4 px-4 pt-3 pb-2.5 bg-[var(--bg-elevated)] border-b border-default"
+        style={{ top: topo }}
+      >
+        {/* Toggle POR DATA / POR GRUPO */}
+        <div className="flex justify-center">
+          <div className="inline-flex p-1 bg-[var(--bg-card)] border border-default rounded-xl">
+            <button
+              onClick={() => setModo("data")}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-display tracking-[1.5px] transition ${
+                modo === "data"
+                  ? "bg-[var(--gold)] text-black font-bold"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              <Calendar size={13} /> POR DATA
+            </button>
+            <button
+              onClick={() => setModo("grupo")}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-display tracking-[1.5px] transition ${
+                modo === "grupo"
+                  ? "bg-[var(--gold)] text-black font-bold"
+                  : "text-secondary hover:text-primary"
+              }`}
+            >
+              <Grid3x3 size={13} /> POR GRUPO
+            </button>
+          </div>
         </div>
+
+        {/* Filtros (só no modo data) */}
+        {modo === "data" && (
+          <div className="flex gap-2 overflow-x-auto mt-2.5 pb-0.5 -mx-1 px-1">
+            {filtros.map((f) => {
+              const ativo = filtroData === f.key;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setFiltroData(f.key as any)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-display tracking-[1.5px] whitespace-nowrap border transition ${
+                    ativo
+                      ? "bg-[var(--gold)] text-black border-[var(--gold)] font-bold"
+                      : "bg-[var(--bg-card)] text-secondary border-default hover:border-strong"
+                  }`}
+                >
+                  {f.label.toUpperCase()}
+                  <span
+                    className={`text-[10px] font-mono ${ativo ? "text-black/60" : "text-muted"}`}
+                  >
+                    {f.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* MODO POR GRUPO */}
       {modo === "grupo" && (
-        <>
+        <div className="mt-5">
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-5">
             {GRUPOS_FIXOS.map((letra) => {
               const grupo = `Grupo ${letra}`;
@@ -397,46 +453,16 @@ export default function ListaJogos({
               </p>
             </div>
           )}
-        </>
+        </div>
       )}
 
       {/* MODO POR DATA */}
       {modo === "data" && (
-        <>
+        <div className="mt-4">
           {/* Banner do jogo de agora / próximo */}
           {foco && !foco.finalizado && focoVisivel && (
             <BannerFoco jogo={foco} onVer={rolarParaFoco} />
           )}
-
-          {/* Filtros */}
-          <div className="flex gap-2 overflow-x-auto pb-3 mb-2 -mx-1 px-1">
-            {[
-              { key: "todos", label: "Todos", count: jogos.length },
-              { key: "pendentes", label: "Sem palpite", count: contadores.pendentes },
-              { key: "proximos", label: "Próximos", count: contadores.proximos },
-              { key: "encerrados", label: "Encerrados", count: contadores.encerrados },
-            ].map((f) => {
-              const ativo = filtroData === f.key;
-              return (
-                <button
-                  key={f.key}
-                  onClick={() => setFiltroData(f.key as any)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-display tracking-[1.5px] whitespace-nowrap border transition ${
-                    ativo
-                      ? "bg-[var(--gold)] text-black border-[var(--gold)] font-bold"
-                      : "bg-[var(--bg-card)] text-secondary border-default hover:border-strong"
-                  }`}
-                >
-                  {f.label.toUpperCase()}
-                  <span
-                    className={`text-[10px] font-mono ${ativo ? "text-black/60" : "text-muted"}`}
-                  >
-                    {f.count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
 
           {/* Lista cronológica */}
           {jogosPorData.length === 0 ? (
@@ -451,10 +477,9 @@ export default function ListaJogos({
                 <div
                   key={jogo.id}
                   ref={ehFoco ? focoRef : undefined}
+                  style={ehFoco ? { scrollMarginTop: topo + 120 } : undefined}
                   className={
-                    ehFoco
-                      ? "rounded-2xl scroll-mt-24 ring-2 ring-[var(--gold)]/60"
-                      : undefined
+                    ehFoco ? "rounded-2xl ring-2 ring-[var(--gold)]/60" : undefined
                   }
                 >
                   <CardJogo
@@ -467,7 +492,7 @@ export default function ListaJogos({
               );
             })
           )}
-        </>
+        </div>
       )}
     </div>
   );
