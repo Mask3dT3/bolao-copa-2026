@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
@@ -10,44 +9,37 @@ import ThemeToggle from "./ThemeToggle";
 import CentralNotificacoes from "./CentralNotificacoes";
 import LogoBolao from "./LogoBolao";
 import Avatar from "./Avatar";
-
 type Props = {
   nome: string;
   isAdmin: boolean;
   userId: string;
   fotoUrl?: string | null;
 };
-
 export default function Header({ nome, isAdmin, userId, fotoUrl }: Props) {
   const path = usePathname();
   const router = useRouter();
-
   async function sair() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
   }
-
   const tabs = [
     { href: "/jogos", label: "JOGOS", icon: Calendar },
     { href: "/ranking", label: "RANKING", icon: Trophy },
     { href: "/estatisticas", label: "STATS", icon: BarChart3 },
     { href: "/regras", label: "REGRAS", icon: Award },
   ];
-
   if (isAdmin) {
     tabs.push({ href: "/admin", label: "ADMIN", icon: Settings });
   }
-
   return (
-    <header className="sticky top-0 z-40 glass">
+    <header className="sticky top-0 z-50 glass shadow-sm border-b border-default">
       <div className="max-w-4xl mx-auto px-4 pt-4">
         <div className="flex justify-between items-center gap-3">
           <Link href="/jogos" className="group min-w-0 flex-shrink">
             <LogoBolao tamanho="md" className="group-hover:opacity-90 transition" />
           </Link>
-
           <div className="flex items-center gap-2 flex-shrink-0">
             <CentralNotificacoes userId={userId} />
             <ThemeToggle />
@@ -80,7 +72,6 @@ export default function Header({ nome, isAdmin, userId, fotoUrl }: Props) {
             </button>
           </div>
         </div>
-
         <nav className="hidden md:flex gap-1 mt-5 overflow-x-auto">
           {tabs.map(({ href, label, icon: Icon }) => {
             const ativa = path === href;
@@ -102,7 +93,6 @@ export default function Header({ nome, isAdmin, userId, fotoUrl }: Props) {
             );
           })}
         </nav>
-
         <div className="md:hidden h-3" />
       </div>
     </header>
