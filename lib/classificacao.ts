@@ -176,3 +176,52 @@ export function listarGrupos(jogos: JogoGrupo[]): string[] {
   const mata = nomes.includes("Mata-mata") ? ["Mata-mata"] : [];
   return [...deGrupo, ...mata];
 }
+
+// ============================================
+// Mata-mata: detecção e agrupamento por fase
+// ============================================
+
+// Ordem canônica das fases eliminatórias (mesmos nomes que a Edge Function grava)
+export const ORDEM_FASES_MATA_MATA = [
+  "32-avos",
+  "Oitavas",
+  "Quartas",
+  "Semifinais",
+  "Disputa de 3º",
+  "Final",
+];
+
+/** Um jogo é de mata-mata quando NÃO é de grupo. */
+export function ehMataMata(fase: string): boolean {
+  if (!fase) return false;
+  return !/^Grupo\s+/i.test(fase) && fase !== "Fase de Grupos";
+}
+
+/** Agrupa só os jogos de mata-mata por fase: { "Oitavas": [...], "Quartas": [...] } */
+export function agruparMataMataPorFase(
+  jogos: JogoGrupo[]
+): Record<string, JogoGrupo[]> {
+  const fases: Record<string, JogoGrupo[]> = {};
+  for (const jogo of jogos) {
+    if (!ehMataMata(jogo.fase)) continue;
+    if (!fases[jogo.fase]) fases[jogo.fase] = [];
+    fases[jogo.fase].push(jogo);
+  }
+  for (const k of Object.keys(fases)) {
+    fases[k].sort(
+      (a, b) => new Date(a.data_jogo).getTime() - new Date(b.data_jogo).getTime()
+    );
+  }
+  return fases;
+}
+
+/** Lista as fases de mata-mata que têm jogos, na ordem canônica. */
+export function listarFasesMataMata(jogos: JogoGrupo[]): string[] {
+  const fases = agruparMataMataPorFase(jogos);
+  const presentes = Object.keys(fases);
+  const ordenadas = ORDEM_FASES_MATA_MATA.filter((f) => presentes.includes(f));
+  const extras = presentes
+    .filter((f) => !ORDEM_FASES_MATA_MATA.includes(f))
+    .sort();
+  return [...ordenadas, ...extras];
+}
