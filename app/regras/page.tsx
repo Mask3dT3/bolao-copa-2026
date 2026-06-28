@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
-import { Target, Check, Lock, Trophy, Zap } from "lucide-react";
+import { Target, Check, Lock, Trophy, Zap, Clock } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +19,8 @@ export default async function PaginaRegras() {
       desc: "Acertou o número exato de gols dos dois times." },
     { icon: Check, color: "text-green-400", titulo: "ACERTOU O RESULTADO", valor: "3 PTS",
       desc: "Acertou quem ganhou (ou empate), mas não o placar exato." },
+    { icon: Clock, color: "text-[var(--danger)]", titulo: "MATA-MATA: VALE OS 90'",
+      desc: "Nos jogos eliminatórios, o palpite vale apenas o placar do tempo regulamentar (90 minutos). Prorrogação e pênaltis decidem quem avança, mas NÃO entram na pontuação do bolão. Os cards de mata-mata mostram o selinho ⏱ VALE 90′." },
     { icon: Lock, color: "text-muted", titulo: "FECHAMENTO",
       desc: "Apostas ficam bloqueadas no momento do início de cada jogo. Você pode editar quantas vezes quiser antes disso." },
     { icon: Trophy, color: "text-[var(--gold)]", titulo: "PRÊMIO",
