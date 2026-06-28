@@ -7,6 +7,7 @@ import {
   agruparJogos,
   calcularClassificacao,
   listarGrupos,
+  listarFasesMataMata,
   JogoGrupo,
   PalpiteUsuario,
 } from "@/lib/classificacao";
@@ -119,6 +120,7 @@ export default function ListaJogos({
 }) {
   const [modo, setModo] = useState<Modo>("data"); // POR DATA é o padrão ao abrir
   const [grupoAtivo, setGrupoAtivo] = useState<string>("Grupo A");
+  const [faseMM, setFaseMM] = useState<string>(""); // fase ativa dentro do Mata-mata
   const [filtroData, setFiltroData] = useState<"todos" | "pendentes" | "proximos" | "encerrados">(
     "todos"
   );
@@ -144,11 +146,21 @@ export default function ListaJogos({
 
   const gruposDisponiveis = useMemo(() => listarGrupos(jogos), [jogos]);
 
+  // Fases de mata-mata que têm jogos + qual está ativa
+  const fasesMataMata = useMemo(() => listarFasesMataMata(jogos), [jogos]);
+  const faseMMAtiva =
+    faseMM && fasesMataMata.includes(faseMM) ? faseMM : fasesMataMata[0] || "";
+
   const jogosDoGrupo = useMemo(() => {
     if (modo !== "grupo" || !grupoAtivo) return [];
     const agrupados = agruparJogos(jogos);
-    return agrupados[grupoAtivo] || [];
-  }, [jogos, grupoAtivo, modo]);
+    const base = agrupados[grupoAtivo] || [];
+    // No Mata-mata, filtra pela fase ativa (Oitavas, Quartas, ...)
+    if (grupoAtivo === "Mata-mata" && faseMMAtiva) {
+      return base.filter((j) => j.fase === faseMMAtiva);
+    }
+    return base;
+  }, [jogos, grupoAtivo, modo, faseMMAtiva]);
 
   // Lista por data: SEMPRE em ordem cronológica (ascendente)
   const jogosPorData = useMemo(() => {
@@ -355,6 +367,48 @@ export default function ListaJogos({
             </button>
           </div>
 
+          {/* Navegação por fase + regra dos 90' (só no Mata-mata) */}
+          {grupoAtivo === "Mata-mata" && fasesMataMata.length > 0 && (
+            <div className="stagger-item">
+              {/* Chips de fase: Oitavas · Quartas · Semis · Final */}
+              <div className="flex gap-2 overflow-x-auto pb-1 mb-4 -mx-1 px-1">
+                {fasesMataMata.map((f) => {
+                  const ativa = f === faseMMAtiva;
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setFaseMM(f)}
+                      className={`whitespace-nowrap px-4 py-1.5 rounded-full text-[12px] font-display tracking-[1.5px] border transition ${
+                        ativa
+                          ? "bg-[var(--gold)] text-black border-[var(--gold)] font-bold"
+                          : "bg-[var(--bg-card)] text-secondary border-default hover:border-strong"
+                      }`}
+                    >
+                      {f.toUpperCase()}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Faixa da regra dos 90' */}
+              <div className="mb-5 rounded-2xl border border-[var(--gold)]/30 bg-[var(--gold)]/[0.06] p-4 flex items-center gap-3">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-[var(--danger)] text-[var(--danger)] flex items-center justify-center font-score font-bold text-base">
+                  90′
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display tracking-[1px] text-[var(--gold)]">
+                    NO MATA-MATA, VALE AOS 90'
+                  </div>
+                  <div className="text-xs text-secondary mt-0.5 leading-relaxed">
+                    Prorrogação e pênaltis{" "}
+                    <strong className="text-primary">não contam</strong> pra pontuação —
+                    o placar palpitado é o do tempo normal.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {ehGrupo && jogosDoGrupo.length > 0 && (
             <div className="mb-6 stagger-item">
               {temPalpitesNoGrupo && (
@@ -404,7 +458,7 @@ export default function ListaJogos({
             </div>
           )}
 
-          {grupoAtivo === "Mata-mata" && jogosDoGrupo.length === 0 && (
+          {grupoAtivo === "Mata-mata" && fasesMataMata.length === 0 && (
             <div className="scorecard rounded-2xl px-6 py-12 text-center stagger-item">
               <Trophy size={48} className="mx-auto text-[var(--gold)]/40 mb-3" />
               <p className="font-display tracking-[2px] text-sm text-muted">AGUARDANDO</p>
