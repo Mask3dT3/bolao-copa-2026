@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase-browser";
 import { Lock, Check, Edit2, Share2, Clock, EyeOff } from "lucide-react";
 import { getBandeiraCircularUrl } from "@/lib/bandeiras";
+import { ehMataMata } from "@/lib/classificacao";
 import { useToast } from "./ToastProvider";
 
 type Aposta = {
@@ -81,6 +82,9 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
   const [aposta, setAposta] = useState(minhaAposta);
 
   const dataJogo = new Date(jogo.data_jogo);
+
+  // Jogo de mata-mata? (controla o selinho "VALE 90'")
+  const mataMata = ehMataMata(jogo.fase);
 
   // Relógio reativo (faz a contagem regressiva e o "AO VIVO" virarem sozinhos)
   const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
@@ -210,7 +214,7 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
           </div>
         </div>
 
-        <div className="px-2">
+        <div className="px-2 flex flex-col items-center gap-1.5">
           {jogo.finalizado && jogo.gols_a !== null ? (
             <div className="flex items-center gap-2">
               <span className="font-score font-bold text-5xl text-[var(--gold)] leading-none drop-shadow-[0_0_12px_rgba(255,215,0,0.3)]">
@@ -223,6 +227,16 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
             </div>
           ) : (
             <div className="text-2xl text-faint font-thin">×</div>
+          )}
+
+          {/* Selinho da regra dos 90' — só no mata-mata */}
+          {mataMata && (
+            <span
+              title="No mata-mata, vale o placar do tempo normal (90 min). Prorrogação e pênaltis não contam."
+              className="inline-flex items-center gap-1 font-mono text-[10px] font-bold tracking-wide text-[var(--danger)] border border-[var(--danger)]/50 rounded-md px-2 py-0.5 whitespace-nowrap"
+            >
+              ⏱ VALE 90′
+            </span>
           )}
         </div>
 
