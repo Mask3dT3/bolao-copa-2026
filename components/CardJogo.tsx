@@ -29,6 +29,11 @@ type Props = {
     gols_a: number | null;
     gols_b: number | null;
     finalizado: boolean;
+    duration?: string | null;
+    gols_a_final?: number | null;
+    gols_b_final?: number | null;
+    penaltis_a?: number | null;
+    penaltis_b?: number | null;
   };
   minhaAposta: Aposta | null;
   todasApostas: Aposta[];
@@ -85,6 +90,18 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
 
   // Jogo de mata-mata? (controla o selinho "VALE 90'")
   const mataMata = ehMataMata(jogo.fase);
+
+  // Resultado final do mata-mata (prorrogação / pênaltis), quando houver
+  const teveProrrogacao =
+    jogo.duration === "EXTRA_TIME" || jogo.duration === "PENALTY_SHOOTOUT";
+  const temPlacarFinal =
+    teveProrrogacao &&
+    jogo.gols_a_final !== null && jogo.gols_a_final !== undefined &&
+    jogo.gols_b_final !== null && jogo.gols_b_final !== undefined;
+  const tevePenaltis =
+    jogo.duration === "PENALTY_SHOOTOUT" &&
+    jogo.penaltis_a !== null && jogo.penaltis_a !== undefined &&
+    jogo.penaltis_b !== null && jogo.penaltis_b !== undefined;
 
   // Relógio reativo (faz a contagem regressiva e o "AO VIVO" virarem sozinhos)
   const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
@@ -250,6 +267,27 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
           </div>
         </div>
       </div>
+
+      {/* Resultado final do mata-mata (prorrogação / pênaltis) */}
+      {jogo.finalizado && temPlacarFinal && (
+        <div className="mt-3 text-center text-xs text-secondary">
+          <span className="text-faint">Resultado final: </span>
+          <span className="font-mono font-bold text-[var(--text-primary)]">
+            {jogo.gols_a_final} × {jogo.gols_b_final}
+          </span>
+          {tevePenaltis ? (
+            <>
+              {" · "}
+              <span className="text-[var(--gold)]">
+                {jogo.penaltis_a} × {jogo.penaltis_b}
+              </span>{" "}
+              nos pênaltis
+            </>
+          ) : (
+            <span> · após prorrogação</span>
+          )}
+        </div>
+      )}
 
       {!fechado && editando && (
         <div className="bg-[var(--bg-input)] p-4 rounded-xl mt-4 border border-dashed border-[var(--gold)]/40">
