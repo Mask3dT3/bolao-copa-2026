@@ -11,6 +11,12 @@ export type JogoGrupo = {
   finalizado: boolean;
   fase: string;
   data_jogo: string;
+  // Detalhes do mata-mata (prorrogação / pênaltis) — opcionais
+  duration?: string | null;
+  gols_a_final?: number | null;
+  gols_b_final?: number | null;
+  penaltis_a?: number | null;
+  penaltis_b?: number | null;
 };
 
 export type PalpiteUsuario = {
