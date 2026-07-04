@@ -12,7 +12,7 @@ export default async function PaginaRegras() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).single();
+    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).maybeSingle();
 
   const regras = [
     { icon: Target, color: "text-[var(--gold)]", titulo: "PLACAR EXATO", valor: "5 PTS",
