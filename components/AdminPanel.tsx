@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase-browser";
 import { useToast } from "./ToastProvider";
@@ -33,6 +33,10 @@ export default function AdminPanel({
   const { toast } = useToast();
   const [carregando, setCarregando] = useState(false);
   const [msg, setMsg] = useState("");
+
+  // Evita mismatch de hidratação: horário real só depois de montar no cliente.
+  const [montado, setMontado] = useState(false);
+  useEffect(() => setMontado(true), []);
   const [editando, setEditando] = useState<number | null>(null);
   const [golsA, setGolsA] = useState("");
   const [golsB, setGolsB] = useState("");
@@ -156,9 +160,9 @@ export default function AdminPanel({
               <div className="space-y-2">
                 {jogosPendentes.map((j) => {
                   const dataJogo = new Date(j.data_jogo);
-                  const horasDesde = Math.floor(
-                    (Date.now() - dataJogo.getTime()) / (1000 * 60 * 60)
-                  );
+                  const horasDesde = montado
+                    ? Math.floor((Date.now() - dataJogo.getTime()) / (1000 * 60 * 60))
+                    : null;
                   return (
                     <div
                       key={j.id}
@@ -170,7 +174,7 @@ export default function AdminPanel({
                           {j.time_a} × {j.time_b}
                         </span>
                         <span className="text-xs text-muted">
-                          começou há {horasDesde}h
+                          começou há {horasDesde ?? "…"}h
                         </span>
                       </div>
                       <button
@@ -267,10 +271,11 @@ export default function AdminPanel({
                 )}
               </div>
               <div className="text-xs text-muted font-mono">
-                {data.toLocaleDateString("pt-BR")}{" "}
+                {data.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo" })}{" "}
                 {data.toLocaleTimeString("pt-BR", {
                   hour: "2-digit",
                   minute: "2-digit",
+                  timeZone: "America/Sao_Paulo",
                 })}{" "}
                 · {j.fase}
               </div>
