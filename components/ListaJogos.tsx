@@ -48,7 +48,9 @@ function formatarCountdown(ms: number): string {
   return `${min}:${String(seg).padStart(2, "0")}`;
 }
 
-// Banner do jogo de agora / próximo, com contagem regressiva ao vivo
+// Banner do jogo de agora / próximo, com contagem regressiva ao vivo.
+// Só é renderizado depois que a lista monta no cliente (foco fica null no SSR),
+// então o Date.now() abaixo é seguro e nunca passa pela hidratação.
 function BannerFoco({ jogo, onVer }: { jogo: Jogo; onVer: () => void }) {
   const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
   useEffect(() => {
@@ -84,8 +86,8 @@ function BannerFoco({ jogo, onVer }: { jogo: Jogo; onVer: () => void }) {
           {jogo.time_a} <span className="text-faint">×</span> {jogo.time_b}
         </div>
         <div className="text-xs text-muted font-mono mt-0.5">
-          {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} ·{" "}
-          {data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", timeZone: "America/Sao_Paulo" })} ·{" "}
+          {data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })}
         </div>
       </div>
       <div className="text-right shrink-0">
@@ -126,7 +128,20 @@ export default function ListaJogos({
   );
 
   const focoRef = useRef<HTMLDivElement | null>(null);
-  const agora = new Date();
+
+  // Relógio "neutro" no SSR: antes de montar, agoraMs=0 (tudo é tratado como futuro) e
+  // não há "jogo foco". Só depois de montar no cliente é que o horário real entra. Isso
+  // garante que o primeiro render do cliente seja idêntico ao do servidor e não quebre a
+  // hidratação (era isso que estava travando os botões e impedindo salvar os palpites).
+  const [montado, setMontado] = useState(false);
+  const [agoraMs, setAgoraMs] = useState<number>(0);
+  useEffect(() => {
+    setMontado(true);
+    setAgoraMs(Date.now());
+    const id = setInterval(() => setAgoraMs(Date.now()), 15000);
+    return () => clearInterval(id);
+  }, []);
+  const agora = new Date(agoraMs);
 
   // Mede a altura do cabeçalho fixo pra encaixar a barra de filtros logo abaixo dele
   const [topo, setTopo] = useState(0);
@@ -186,15 +201,15 @@ export default function ListaJogos({
       (a, b) => new Date(a.data_jogo).getTime() - new Date(b.data_jogo).getTime()
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jogos, filtroData, minhasApostas, modo]);
+  }, [jogos, filtroData, minhasApostas, modo, agoraMs]);
 
   // Jogo "foco": ao vivo agora -> senão o próximo a acontecer -> senão o último encerrado
   const foco = useMemo<Jogo | null>(() => {
-    if (modo !== "data" || jogos.length === 0) return null;
+    if (!montado || modo !== "data" || jogos.length === 0) return null;
     const ordenados = [...jogos].sort(
       (a, b) => new Date(a.data_jogo).getTime() - new Date(b.data_jogo).getTime()
     );
-    const t = Date.now();
+    const t = agoraMs;
     const aoVivo = ordenados.find(
       (j) => new Date(j.data_jogo).getTime() <= t && !j.finalizado
     );
@@ -205,7 +220,7 @@ export default function ListaJogos({
     if (proximo) return proximo;
     const encerrados = ordenados.filter((j) => j.finalizado);
     return encerrados.length ? encerrados[encerrados.length - 1] : ordenados[ordenados.length - 1];
-  }, [jogos, modo]);
+  }, [jogos, modo, montado, agoraMs]);
 
   function rolarParaFoco() {
     // garante que o jogo em foco esteja na lista atual, depois rola até ele
@@ -255,7 +270,7 @@ export default function ListaJogos({
     const encerrados = jogos.filter((j) => j.finalizado).length;
     return { pendentes, proximos, encerrados };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jogos, minhasApostas, modo]);
+  }, [jogos, minhasApostas, modo, agoraMs]);
 
   const filtros = [
     { key: "todos", label: "Todos", count: jogos.length },
