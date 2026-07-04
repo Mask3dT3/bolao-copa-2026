@@ -28,9 +28,11 @@ export default async function PaginaJogos() {
 
   // Palpites de TODOS — via view pública, que oculta os placares dos jogos que ainda não
   // começaram (pra ninguém copiar). Serve só pra montar a lista "N PALPITES" de cada jogo.
+  // A view agora vem de uma função (traz nome/foto_url como colunas), então lemos "*"
+  // sem embed — o embed de profiles não funciona em view baseada em função no PostgREST.
   const { data: apostasPublicas } = await supabase
     .from("apostas_publicas")
-    .select("*, profiles(nome, foto_url)");
+    .select("*");
 
   // MEUS palpites SEMPRE, lidos direto da tabela `apostas`. A RLS já libera o dono a ver os
   // próprios (auth.uid() = user_id), inclusive em jogos futuros — que é justamente o que a
@@ -45,8 +47,9 @@ export default async function PaginaJogos() {
   const minhasApostas: Record<number, any> = {};
 
   (apostasPublicas || []).forEach((a) => {
+    const row = { ...a, profiles: { nome: a.nome, foto_url: a.foto_url } };
     if (!apostasPorJogo[a.jogo_id]) apostasPorJogo[a.jogo_id] = [];
-    apostasPorJogo[a.jogo_id].push(a);
+    apostasPorJogo[a.jogo_id].push(row);
   });
 
   // Injeta os meus palpites (com o placar real) por cima do que veio da view, garantindo
