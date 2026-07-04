@@ -23,17 +23,38 @@ export default async function PaginaJogos() {
     .select("*")
     .order("data_jogo", { ascending: true });
 
-  const { data: apostas } = await supabase
+  // Palpites de TODOS — via view pública, que oculta os placares dos jogos que ainda não
+  // começaram (pra ninguém copiar). Serve só pra montar a lista "N PALPITES" de cada jogo.
+  const { data: apostasPublicas } = await supabase
     .from("apostas_publicas")
     .select("*, profiles(nome, foto_url)");
+
+  // MEUS palpites SEMPRE, lidos direto da tabela `apostas`. A RLS já libera o dono a ver os
+  // próprios (auth.uid() = user_id), inclusive em jogos futuros — que é justamente o que a
+  // view esconde. Sem isto, ao recarregar a página o seu próprio palpite some da tela e
+  // parece que "não salvou" (mesmo já estando gravado no banco).
+  const { data: apostasMinhas } = await supabase
+    .from("apostas")
+    .select("*")
+    .eq("user_id", user.id);
 
   const apostasPorJogo: Record<number, any[]> = {};
   const minhasApostas: Record<number, any> = {};
 
-  (apostas || []).forEach((a) => {
+  (apostasPublicas || []).forEach((a) => {
     if (!apostasPorJogo[a.jogo_id]) apostasPorJogo[a.jogo_id] = [];
     apostasPorJogo[a.jogo_id].push(a);
-    if (a.user_id === user.id) minhasApostas[a.jogo_id] = a;
+  });
+
+  // Injeta os meus palpites (com o placar real) por cima do que veio da view, garantindo
+  // que eu sempre veja o meu — tanto no card "SEU PALPITE" quanto na lista do jogo.
+  (apostasMinhas || []).forEach((a) => {
+    const meu = { ...a, profiles: { nome: profile?.nome || "Você" } };
+    minhasApostas[a.jogo_id] = meu;
+    const lista = apostasPorJogo[a.jogo_id] || (apostasPorJogo[a.jogo_id] = []);
+    const idx = lista.findIndex((x) => x.user_id === a.user_id);
+    if (idx >= 0) lista[idx] = meu;
+    else lista.push(meu);
   });
 
   return (
