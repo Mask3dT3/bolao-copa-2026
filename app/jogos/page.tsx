@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import Header from "@/components/Header";
@@ -5,8 +6,10 @@ import BottomNav from "@/components/BottomNav";
 import ListaJogos from "@/components/ListaJogos";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function PaginaJogos() {
+  noStore(); // desliga o cache de dados do Next: os palpites são sempre lidos frescos
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
