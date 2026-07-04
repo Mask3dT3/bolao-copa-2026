@@ -13,7 +13,7 @@ export default async function PaginaEstatisticas() {
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
-    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).single();
+    .from("profiles").select("nome, foto_url, is_admin").eq("id", user.id).maybeSingle();
 
   const { data: apostas } = await supabase
     .from("apostas")
@@ -153,7 +153,7 @@ export default async function PaginaEstatisticas() {
                         {j.time_a} <span className="text-muted">×</span> {j.time_b}
                       </div>
                       <div className="text-[10px] text-muted font-mono">
-                        {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} · {j.fase}
+                        {data.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", timeZone: "America/Sao_Paulo" })} · {j.fase}
                       </div>
                     </div>
                     <Mini time={j.time_b} />
