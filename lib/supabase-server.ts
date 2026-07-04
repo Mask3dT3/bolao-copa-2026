@@ -10,6 +10,12 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      // Impede o Next de cachear as respostas do Supabase (o fetch padrão cacheia).
+      // Sem isto, listas como "N PALPITES" ficam congeladas numa leitura antiga.
+      global: {
+        fetch: (url: any, options: any = {}) =>
+          fetch(url, { ...options, cache: "no-store" }),
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();
