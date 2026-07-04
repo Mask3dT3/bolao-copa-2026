@@ -103,9 +103,15 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
     jogo.penaltis_a !== null && jogo.penaltis_a !== undefined &&
     jogo.penaltis_b !== null && jogo.penaltis_b !== undefined;
 
-  // Relógio reativo (faz a contagem regressiva e o "AO VIVO" virarem sozinhos)
-  const [agoraMs, setAgoraMs] = useState<number>(() => Date.now());
+  // Relógio reativo. IMPORTANTE: começa "neutro" (montado=false, agoraMs=0) pra que o
+  // primeiro render do cliente bata EXATAMENTE com o HTML do servidor. Só depois de montar
+  // é que o horário real entra. Sem isso, servidor e cliente calculam "AO VIVO"/contagem/
+  // aberto-fechado de formas diferentes e a hidratação do React quebra (erros #418/#423/#425).
+  const [montado, setMontado] = useState(false);
+  const [agoraMs, setAgoraMs] = useState<number>(0);
   useEffect(() => {
+    setMontado(true);
+    setAgoraMs(Date.now());
     if (jogo.finalizado) return;
     const faltaNoMount = dataJogo.getTime() - Date.now();
     // só liga o relógio se o jogo está perto (faltando < 24h) ou já em andamento
@@ -116,11 +122,11 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
   }, [jogo.data_jogo, jogo.finalizado]);
 
   const msRestante = dataJogo.getTime() - agoraMs;
-  const jaComecou = msRestante <= 0;
-  const fechado = jaComecou || jogo.finalizado;
+  const jaComecou = montado && msRestante <= 0;
+  const fechado = jogo.finalizado || jaComecou;
   const aoVivo = jaComecou && !jogo.finalizado;
-  const urgente = !jaComecou && msRestante < 3600000; // falta menos de 1h pra fechar
-  const countdown = formatarCountdown(msRestante);
+  const urgente = montado && !jaComecou && msRestante < 3600000; // falta menos de 1h pra fechar
+  const countdown = montado ? formatarCountdown(msRestante) : "";
 
   async function salvar() {
     if (golsA === "" || golsB === "") return;
@@ -141,7 +147,8 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
       .single();
 
     if (error) {
-      toast("error", "Não consegui salvar", "O jogo pode ter começado.");
+      console.error("[salvar palpite]", error);
+      toast("error", "Não consegui salvar", error.message || "Tente de novo em instantes.");
     } else {
       setAposta(data);
       setEditando(false);
@@ -184,8 +191,8 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
         </span>
         <span className="text-xs text-muted font-mono flex items-center gap-1">
           <Clock size={11} />
-          {dataJogo.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })} ·{" "}
-          {dataJogo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          {dataJogo.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", timeZone: "America/Sao_Paulo" })} ·{" "}
+          {dataJogo.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" })}
         </span>
 
         {/* AO VIVO — jogo começou e ainda não foi finalizado */}
@@ -199,8 +206,8 @@ export default function CardJogo({ jogo, minhaAposta, todasApostas, userId }: Pr
           </span>
         )}
 
-        {/* Contagem regressiva — jogo ainda não começou */}
-        {!jogo.finalizado && !jaComecou && (
+        {/* Contagem regressiva — jogo ainda não começou (só após montar, evita hidratação) */}
+        {montado && !jogo.finalizado && !jaComecou && (
           <span
             className={`ml-auto flex items-center gap-1 font-display text-[10px] tracking-[1px] px-2 py-0.5 rounded-full ${
               urgente
