@@ -16,7 +16,7 @@ export default async function PaginaPerfil() {
     .from("profiles")
     .select("nome, email, foto_url, is_admin")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   return (
     <>
