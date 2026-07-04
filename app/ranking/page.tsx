@@ -63,7 +63,7 @@ export default async function PaginaRanking() {
     .from("profiles")
     .select("nome, is_admin")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const { data: rankingRaw } = await supabase.from("ranking").select("*");
   const { count: jogosFinalizados } = await supabase
