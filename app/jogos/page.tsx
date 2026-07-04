@@ -16,7 +16,7 @@ export default async function PaginaJogos() {
     .from("profiles")
     .select("nome, foto_url, is_admin")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   const { data: jogos } = await supabase
     .from("jogos")
